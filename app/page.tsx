@@ -40,11 +40,13 @@ export default function Home() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
     fetch("/api/weather").then(r => r.json()).then(setWeather).catch(() => null);
     fetch("/api/news").then(r => r.json()).then(setNews).catch(() => []);
     fetch("/api/stocks").then(r => r.json()).then(setStocks).catch(() => []);
+    fetch("/api/setup").then(r => r.json()).then(({ dbIds }) => setNeedsSetup(!dbIds)).catch(() => null);
   }, []);
 
   return (
@@ -54,6 +56,11 @@ export default function Home() {
       </header>
 
       <div className="flex-1 flex flex-col gap-5 p-5 overflow-y-auto pb-24">
+        {needsSetup && (
+          <Link href="/setup" className="block bg-indigo-900 border border-indigo-600 rounded-2xl px-5 py-3 text-sm text-indigo-200">
+            ⚙️ 初期設定が必要です。タップして Notion DB を設定してください →
+          </Link>
+        )}
 
         {/* ショートカット */}
         <section>

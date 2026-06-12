@@ -1,6 +1,12 @@
 import NextAuth from "next-auth";
 import Notion from "next-auth/providers/notion";
 
+declare module "next-auth" {
+  interface Session {
+    accessToken: string;
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Notion({
@@ -16,11 +22,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, account }) {
       if (account?.access_token) {
         token.accessToken = account.access_token;
+        token.sub = token.sub ?? account.providerAccountId;
       }
       return token;
     },
     async session({ session, token }) {
-      (session as { accessToken?: string }).accessToken = token.accessToken as string;
+      session.accessToken = token.accessToken as string;
+      session.user.id = token.sub ?? "";
       return session;
     },
   },

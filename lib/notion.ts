@@ -1,19 +1,14 @@
 import { Client } from "@notionhq/client";
 import type { GroqResult } from "./groq";
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
+import type { UserDbIds } from "./redis";
 
-const DB_IDS = {
-  misc: process.env.NOTION_DB_MISC!,
-  places: process.env.NOTION_DB_PLACES!,
-  shopping: process.env.NOTION_DB_SHOPPING!,
-  schedule: process.env.NOTION_DB_SCHEDULE!,
-};
+export async function saveToNotion(result: GroqResult, accessToken: string, dbIds: UserDbIds): Promise<void> {
+  const notion = new Client({ auth: accessToken });
 
-export async function saveToNotion(result: GroqResult): Promise<void> {
   switch (result.db) {
     case "misc":
       await notion.pages.create({
-        parent: { database_id: DB_IDS.misc },
+        parent: { database_id: dbIds.misc },
         properties: {
           テキスト: {
             title: [{ text: { content: result.data.text ?? "" } }],
@@ -24,7 +19,7 @@ export async function saveToNotion(result: GroqResult): Promise<void> {
 
     case "places":
       await notion.pages.create({
-        parent: { database_id: DB_IDS.places },
+        parent: { database_id: dbIds.places },
         properties: {
           場所名: {
             title: [{ text: { content: result.data.placeName ?? "" } }],
@@ -42,7 +37,7 @@ export async function saveToNotion(result: GroqResult): Promise<void> {
 
     case "shopping":
       await notion.pages.create({
-        parent: { database_id: DB_IDS.shopping },
+        parent: { database_id: dbIds.shopping },
         properties: {
           商品名: {
             title: [{ text: { content: result.data.itemName ?? "" } }],
@@ -65,7 +60,7 @@ export async function saveToNotion(result: GroqResult): Promise<void> {
         : null;
 
       await notion.pages.create({
-        parent: { database_id: DB_IDS.schedule },
+        parent: { database_id: dbIds.schedule },
         properties: {
           タイトル: {
             title: [{ text: { content: result.data.title ?? "" } }],
