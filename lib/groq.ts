@@ -26,21 +26,30 @@ miscの場合:
 
 注意: timeが不明な場合はtime:""、dateが不明な場合はdate:""とすること。今日の日付を基準に相対日付（明日・来週など）を解決すること。`;
 
+const MODE_PROMPTS = {
+  normal: "",
+  business: "messageフィールドは丁寧でフォーマルなビジネス敬語で書くこと。",
+  friend: "messageフィールドはフランクで親しみやすいタメ口で書くこと。絵文字を1つ使ってよい。",
+};
+
+export type Mode = "normal" | "business" | "friend";
+
 export interface GroqResult {
   db: "schedule" | "places" | "shopping" | "misc";
   data: Record<string, string>;
   message: string;
 }
 
-export async function classifyMemo(text: string): Promise<GroqResult> {
+export async function classifyMemo(text: string, mode: Mode = "normal"): Promise<GroqResult> {
   const today = new Date().toISOString().split("T")[0];
+  const modePrompt = MODE_PROMPTS[mode];
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: `${SYSTEM_PROMPT}\n\n今日の日付: ${today}`,
+        content: `${SYSTEM_PROMPT}${modePrompt ? `\n\n${modePrompt}` : ""}\n\n今日の日付: ${today}`,
       },
       { role: "user", content: text },
     ],
