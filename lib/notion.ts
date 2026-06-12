@@ -1,7 +1,5 @@
 import { Client } from "@notionhq/client";
 import type { GroqResult } from "./groq";
-import gamesConfig from "@/config/games.json";
-
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
 const DB_IDS = {
@@ -23,26 +21,6 @@ export async function saveToNotion(result: GroqResult): Promise<void> {
         },
       });
       break;
-
-    case "game": {
-      const gameName = result.gameName ?? "";
-      const gameDbId = (gamesConfig.games as Record<string, string>)[gameName];
-      if (!gameDbId || gameDbId === "notion_db_id_をここに入れる") {
-        throw new Error(`ゲーム「${gameName}」のDBが設定されていません`);
-      }
-      await notion.pages.create({
-        parent: { database_id: gameDbId },
-        properties: {
-          タイトル: {
-            title: [{ text: { content: result.data.title ?? "" } }],
-          },
-          メモ: {
-            rich_text: [{ text: { content: result.data.memo ?? "" } }],
-          },
-        },
-      });
-      break;
-    }
 
     case "places":
       await notion.pages.create({
