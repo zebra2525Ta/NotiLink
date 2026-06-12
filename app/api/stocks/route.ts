@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 const STOCKS = [
   { code: "7203", name: "トヨタ" },
@@ -7,6 +8,11 @@ const STOCKS = [
 ];
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ message: "ログインが必要です" }, { status: 401 });
+  }
+
   const apiKey = process.env.JQUANTS_REFRESH_TOKEN ?? "";
 
   const results = [];

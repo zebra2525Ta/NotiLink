@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const result = await classifyMemo(text, mode as Mode);
     await saveToNotion(result, session.accessToken, dbIds);
 
-    return NextResponse.json({ message: result.message, db: result.db });
+    return NextResponse.json({ message: result.message, count: result.items.length });
   } catch (error) {
     console.error("[memo]", error);
     const msg = error instanceof Error ? error.message : "保存に失敗しました";

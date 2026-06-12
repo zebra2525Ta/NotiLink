@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 const ICONS: Record<string, string> = {
   "01": "☀️", "02": "🌤️", "03": "☁️", "04": "☁️",
@@ -6,8 +7,13 @@ const ICONS: Record<string, string> = {
 };
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ message: "ログインが必要です" }, { status: 401 });
+  }
+
   const res = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?q=Tokyo&appid=${process.env.OPENWEATHER_API_KEY}&units=metric&lang=ja`
+    `https://api.openweathermap.org/data/2.5/weather?q=Tokyo&appid=${process.env.OPENWEATHERMAP_API_KEY}&units=metric&lang=ja`
   );
   const data = await res.json();
   const iconKey = (data.weather[0].icon as string).slice(0, 2);
