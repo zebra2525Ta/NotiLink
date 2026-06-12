@@ -1,0 +1,46 @@
+ログイン画面
+画面仕様書
+作成日：2026/6/11
+1. 概要
+Notionアカウントを使ったOAuth認証のエントリーポイント。メールアドレス登録は不要で、Notionアカウントでのログインのみを提供する。
+
+2. UI構成
+•	アプリ名・ロゴ
+•	「Notionでログイン」ボタン1つのみ
+•	それ以外の認証手段は表示しない
+
+3. 認証フロー
+
+ステップ	処理内容
+1	ユーザーが「Notionでログイン」ボタンをタップ
+2	NextAuth.jsがNotion OAuthの認証画面にリダイレクト
+3	ユーザーがNotionアカウントで許可
+4	NextAuth.jsがNotionのアクセストークンを自動取得
+5	Vercel KVにユーザーID＋トークンを保存
+6	ホーム画面にリダイレクト
+
+4. 仕様詳細
+•	Notionアカウントを持たないユーザーはログイン不可
+•	Googleログイン等の他の認証方法は提供しない（Notion前提のアプリのため）
+•	ログイン成功後は自動的にそのユーザーのNotionワークスペースと連携済みになる
+•	セッションはNextAuth.jsが管理
+
+5. 事前準備（開発者作業）
+•	Notion開発者ポータル（notion.so/my-integrations）でOAuthアプリを新規作成
+•	OAuthを有効化し、リダイレクトURLを設定
+•	　→ https://[アプリURL]/api/auth/callback/notion
+
+必要な環境変数：
+
+変数名	説明
+NOTION_CLIENT_ID	Notionアプリ登録時に取得したClient ID
+NOTION_CLIENT_SECRET	Notionアプリ登録時に取得したClient Secret
+NEXTAUTH_SECRET	NextAuth.js用のランダム文字列
+
+6. エラーケース
+
+ケース	対応
+Notionアカウントなし	Notionの登録画面に案内
+認証キャンセル	ログイン画面に戻る
+トークン保存失敗	エラーメッセージを表示して再試行を促す
+
