@@ -68,88 +68,78 @@ export async function POST(req: NextRequest) {
     const examples = await queryDatabase(session.accessToken, intent.database_id);
     console.log("[memo] examples fetched:", examples.length);
 
-    const groqProps = await generateProperties(text, schema, examples, mode as Mode);
-    console.log("[memo] groq props:", JSON.stringify(groqProps));
-    console.log("[memo] schema.properties:", JSON.stringify(schema.properties));
-    console.log("[memo] schema.title:", schema.title, "schema.id:", schema.id);
+    const groqItemList = await generateProperties(text, schema, examples, mode as Mode);
+    console.log("[memo] groq items:", JSON.stringify(groqItemList));
 
-    // スキーマをもとに直接Notionプロパティを組み立てる
-    const notionProperties: Record<string, unknown> = {};
-    const assigned = new Set<string>();
-
-    // typeごとのスキーマプロパティを逆引き
+    const titleProp = schema.properties.find((p) => p.type === "title");
     const typeToProps = new Map<string, typeof schema.properties>();
     for (const p of schema.properties) {
       typeToProps.set(p.type, [...(typeToProps.get(p.type) ?? []), p]);
     }
 
-    for (const [groqKey, groqValue] of Object.entries(groqProps)) {
-      if (!groqValue || typeof groqValue !== "string") continue;
-      const keyLower = groqKey.trim().toLowerCase();
+    let createdCount = 0;
+    for (const groqProps of groqItemList) {
+      const notionProperties: Record<string, unknown> = {};
+      const assigned = new Set<string>();
 
-      // ① 名前完全一致（case-insensitive）
-      const exact = schema.properties.find(
-        (p) => p.name.trim().toLowerCase() === keyLower
-      );
-      if (exact && !assigned.has(exact.name)) {
-        const v = buildNotionValue(groqValue, exact.type);
-        if (v) { notionProperties[exact.name] = v; assigned.add(exact.name); }
-        continue;
-      }
+      for (const [groqKey, groqValue] of Object.entries(groqProps)) {
+        if (!groqValue || typeof groqValue !== "string") continue;
+        const keyLower = groqKey.trim().toLowerCase();
 
-      // ② 型ベースマッチ（"title" → type:title のスキーマ列へ）
-      const targetType = GROQ_KEY_TO_TYPE[keyLower];
-      if (targetType) {
-        const candidate = (typeToProps.get(targetType) ?? []).find((p) => !assigned.has(p.name));
-        if (candidate) {
-          const v = buildNotionValue(groqValue, candidate.type);
-          if (v) { notionProperties[candidate.name] = v; assigned.add(candidate.name); }
+        // ① 名前完全一致
+        const exact = schema.properties.find((p) => p.name.trim().toLowerCase() === keyLower);
+        if (exact && !assigned.has(exact.name)) {
+          const v = buildNotionValue(groqValue, exact.type);
+          if (v) { notionProperties[exact.name] = v; assigned.add(exact.name); }
           continue;
+        }
+
+        // ② 型ベースマッチ
+        const targetType = GROQ_KEY_TO_TYPE[keyLower];
+        if (targetType) {
+          const candidate = (typeToProps.get(targetType) ?? []).find((p) => !assigned.has(p.name));
+          if (candidate) {
+            const v = buildNotionValue(groqValue, candidate.type);
+            if (v) { notionProperties[candidate.name] = v; assigned.add(candidate.name); }
+            continue;
+          }
         }
       }
 
-      console.log("[memo] unmatched groq key:", groqKey, "val:", groqValue);
+      // titleが未設定なら確実に埋める
+      if (titleProp && !assigned.has(titleProp.name)) {
+        const fallback = Object.values(groqProps).find((v) => typeof v === "string" && v.trim()) ?? text;
+        notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+      }
+      if (Object.keys(notionProperties).length === 0) {
+        const key = titleProp?.name ?? "タイトル";
+        notionProperties[key] = { title: [{ text: { content: text } }] };
+      }
+
+      console.log("[memo] creating page:", JSON.stringify(notionProperties));
+
+      const res = await fetch("https://api.notion.com/v1/pages", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          "Notion-Version": "2022-06-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          parent: { database_id: intent.database_id },
+          properties: notionProperties,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("[memo] notion create failed:", JSON.stringify(err));
+        throw new Error(JSON.stringify(err));
+      }
+      createdCount++;
     }
 
-    // 絶対保証: titleプロパティには必ず値を入れる
-    const titleProp = schema.properties.find((p) => p.type === "title");
-    console.log("[memo] titleProp:", JSON.stringify(titleProp), "assigned:", JSON.stringify([...assigned]));
-    if (titleProp && !assigned.has(titleProp.name)) {
-      const fallback =
-        Object.values(groqProps).find((v) => typeof v === "string" && v.trim()) ?? text;
-      notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
-    }
-
-    // 核オプション: それでも空なら原文テキストを直接タイトルに
-    if (Object.keys(notionProperties).length === 0) {
-      console.log("[memo] NUCLEAR FALLBACK: setting title to raw text");
-      const key = titleProp?.name ?? "タイトル";
-      notionProperties[key] = { title: [{ text: { content: text } }] };
-    }
-
-    console.log("[memo] final notionProperties:", JSON.stringify(notionProperties));
-
-    // Notion API 直接呼び出し
-    const res = await fetch("https://api.notion.com/v1/pages", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        parent: { database_id: intent.database_id },
-        properties: notionProperties,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      console.error("[memo] notion create failed:", JSON.stringify(err));
-      throw new Error(JSON.stringify(err));
-    }
-
-    return NextResponse.json({ message: intent.message, count: 1 });
+    return NextResponse.json({ message: intent.message, count: createdCount });
 
   } catch (error) {
     console.error("[memo]", error);

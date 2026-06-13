@@ -61,13 +61,28 @@ ${modeHint ? `- ${modeHint}` : ""}`;
   return JSON.parse(content) as IntentResult;
 }
 
-// ── Phase 2: 既存データを真似してプロパティを生成 ──────────────────────
+function buildDateContext(): string {
+  const DAY = ["日", "月", "火", "水", "木", "金", "土"];
+  const now = new Date();
+  const todayDow = now.getDay();
+  const lines: string[] = [`今日: ${now.toISOString().split("T")[0]}（${DAY[todayDow]}曜日）`];
+  // 明日〜14日後の日付と曜日を列挙
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    const label = i === 1 ? "明日" : `${i}日後`;
+    lines.push(`${label}: ${d.toISOString().split("T")[0]}（${DAY[d.getDay()]}曜日）`);
+  }
+  return lines.join("\n");
+}
+
+// ── Phase 2: 既存データを真似してプロパティを生成（複数日対応） ──────────
 export async function generateProperties(
   text: string,
   schema: DbSchema,
   examples: Record<string, string>[],
   mode: Mode = "normal"
-): Promise<Record<string, string>> {
+): Promise<Record<string, string>[]> {
   const propDefs = schema.properties
     .map((p) => `- ${p.name} (${p.type}型)`)
     .join("\n");
@@ -92,21 +107,27 @@ ${propDefs}
 既存データの例（キー名・値の形式をそのまま真似すること）:
 ${examplesText}
 
+【日付カレンダー】（必ずこの表を参照して正確な日付を使うこと）
+${buildDateContext()}
+
 ルール:
 - キー名は上記プロパティ定義の名前を1文字も変えずコピー（英語・ローマ字変換・翻訳禁止）
-- title型のプロパティ: イベント名・物品名・メモ本文など「内容」のみを入れる。日付・時刻は絶対に含めないこと（例: "6/19バイト"→"バイト"）
-- date型のプロパティ: 以下の3パターンで "開始~終了" の形式（チルダ区切り）で返すこと
-  ・日付のみ指定 → "YYYY-MM-DDT00:00:00~YYYY-MM-DDT23:58:00"
-  ・日付と開始時間 → "YYYY-MM-DDTHH:MM:00~YYYY-MM-DDT23:58:00"
-  ・日付と開始〜終了時間 → "YYYY-MM-DDTHH:MM:00~YYYY-MM-DDTHH:MM:00"
-  時刻は24時間表記。終了時間の指定がなければ23:58を使う
-- rich_text型のプロパティ: 補足説明・メモなどを入れる
-- checkbox型は "true" または "false" の文字列
-- title型のプロパティは必ず含めること
-- 今日の日付: ${new Date().toISOString().split("T")[0]}
+- title型: イベント名・物品名など「内容のみ」。日付・時刻は絶対含めない（例: "6/19バイト"→"バイト"）
+- date型: 必ず "開始~終了" のチルダ区切りで返す（24時間表記）
+  ・日付のみ → "YYYY-MM-DDT00:00:00~YYYY-MM-DDT23:58:00"
+  ・日付+開始時間 → "YYYY-MM-DDTHH:MM:00~YYYY-MM-DDT23:58:00"
+  ・日付+開始〜終了時間 → "YYYY-MM-DDTHH:MM:00~YYYY-MM-DDTHH:MM:00"
+- rich_text型: 補足・メモ
+- checkbox型: "true" または "false"
+- title型は必ず含める
 ${modeHint ? `- ${modeHint}` : ""}
 
-{"プロパティ名": "値", ...} の形式のJSONのみを返すこと。`;
+【複数日・複数件の場合】
+複数の日付・曜日が指定された場合は、itemsに複数のオブジェクトを入れること。
+{"items":[{"プロパティ名":"値",...},{"プロパティ名":"値",...}]}
+
+【1件の場合】
+{"items":[{"プロパティ名":"値",...}]}`;
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
@@ -118,15 +139,16 @@ ${modeHint ? `- ${modeHint}` : ""}
     response_format: { type: "json_object" },
   });
 
-  const content = completion.choices[0].message.content ?? "{}";
+  const content = completion.choices[0].message.content ?? '{"items":[]}';
   console.log("[groq] generateProperties raw:", content);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let parsed = JSON.parse(content) as any;
-  // Groqが {"properties": {...}} と返す場合があるので unwrap
-  if (parsed.properties && typeof parsed.properties === "object" && !Array.isArray(parsed.properties)) {
-    parsed = parsed.properties;
-  }
-  return parsed as Record<string, string>;
+  const parsed = JSON.parse(content) as any;
+
+  // {"items":[...]} 形式
+  if (Array.isArray(parsed.items)) return parsed.items as Record<string, string>[];
+  // フォールバック: オブジェクト直返しや配列直返し
+  if (Array.isArray(parsed)) return parsed as Record<string, string>[];
+  return [parsed] as Record<string, string>[];
 }
 
 // ── クエリ結果を自然言語で返す ────────────────────────────────────────
