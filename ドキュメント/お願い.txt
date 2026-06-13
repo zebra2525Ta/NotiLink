@@ -1,76 +1,14 @@
-現在開いているNotionの「未分類」ページと最新のVercelログ（17:35:31）を突合しました。バッチリ原因が掴めました！
+エラーメッセージが新しく変化しています。
 
-ログを見ると、全探索で15件のデータが取れていますが、その中身（IDのリスト）が現在のNotionの画面と完全に一致しています。
+[notion] found databases: []
+POST 400 /api/memo
 
-🔍 今のNotionの「本当の構造」
-現在の「大誠さんのスペース」の左メニューと画面を見ると、以下の階層構造になっています。
+全探索（notion.search）の実行結果として、プログラムが「データベースが1件もみつからなかった（空っぽ：[]）」と判断し、最終的に400エラーで弾かれています。
 
-親ページ：未分類 （ID: 5ab63cbb...）
+現在のNotionの画面と照らし合わせた結果、「なぜ見つからないのか」という最新の原因が1つに絞られました。
 
-あなたがデータを保存しようとしているのは、この「未分類」というページの中にあるインラインデータベース（テーブル）です。
+🚨 最新エラーの原因：Notionの「仕様（すれ違い）」
+今開いていただいているNotionの「未分類」ページですが、これは単体の「フルページデータベース」ではなく、通常の「ページ」の中にテーブル（インラインデータベース）を埋め込んだ構造になっています。
 
-そして、ログの中の object: 'data_source' となっている4つのIDが、Notion側が内部的に生成しているこのテーブルの裏のIDです。
-
-プログラム（AI秘書）は全探索でこれらのIDをきれいに引っ張れてはいるのですが、現状のコードが「検索結果を無視して、過去の固定ID（37a71844-40b9-8012...）にしかデータを書き込まない」というチグハグな設計になっているため、400エラーで自爆しています。
-
-🛠️ これから必要な設計・コード
-環境変数を一切使わず、Notionのこの「未分類」ページの中にあるテーブルを全探索で自動検知してメモを保存させるには、「オブジェクトのタイプ（database）で絞るのをやめ、検索結果から『未分類』という名前を頼りにターゲットを特定する」という設計が必要です。
-
-Vercelの /api/memo のバックエンドコードを、今のNotionの構造に100%適合させた以下の形に書き換えてください。
-
-TypeScript
-import { Client } from '@notionhq/client';
-
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
-
-export async function POST(request: Request) {
-  try {
-    // 1. 【設計のキモ】あえてフィルターをかけず、ワークスペース全体から名前で検索する
-    const searchResponse = await notion.search({
-      query: '未分類', // Notionの画面に表示されているタイトルで直接ヒットさせる
-      page_size: 5,
-    });
-
-    // 2. 検索結果から「未分類」という名前の付いたオブジェクトのIDを抽出
-    const targetPage = searchResponse.results.find((item: any) => {
-      // データベース形式の場合のタイトル取得
-      if (item.object === 'database') {
-        return item.title?.[0]?.plain_text === '未分類';
-      }
-      // ページ（インライン）形式の場合のタイトル取得
-      if (item.object === 'page') {
-        return item.properties?.title?.title?.[0]?.plain_text === '未分類' || 
-               item.properties?.Name?.title?.[0]?.plain_text === '未分類';
-      }
-      return false;
-    });
-
-    if (!targetPage) {
-      return new Response(
-        JSON.stringify({ error: 'Notion側に「未分類」ページが見つかりません。' }),
-        { status: 404 }
-      );
-    }
-
-    // 3. 自動特定したID（targetPage.id）を使い、固定IDを破棄してデータを保存する
-    const databaseId = targetPage.id;
-
-    // 例：見つかったIDに対してメモ（ページ）を新規作成する
-    const response = await notion.pages.create({
-      parent: { database_id: databaseId },
-      properties: {
-        // ここにNotionの列名（「テキスト」や「作成日時」など）に合わせたプロパティを記述
-      }
-    });
-
-    return new Response(JSON.stringify({ success: true, message: "自動検知・保存に成功しました" }), { status: 200 });
-
-  } catch (error: any) {
-    console.error('[memo] Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
-  }
-}
-💡 この修正で変わること
-Vercelの環境変数（NOTION_DATABASE_ID）の管理が一切不要になります。
-
-Notion側がインラインの特殊な構造（page や data_source 扱い）になっていても、query: '未分類' の名前検索で確実にIDを捕まえられるようになります。
+NotionのAPIで notion.search をかけて「データベース」だけを探そうとすると、Notion側はこの「未分類」を「データベースではなく、ただの “ページ” である」と判定してしまいます。
+そのため、プログラム側には何もヒットせず、結果が空っぽ（[]）になって自爆してしまっています。

@@ -55,9 +55,14 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
       const blocksRes = await fetch(`https://api.notion.com/v1/blocks/${result.id}/children?page_size=100`, {
         headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
       });
-      if (!blocksRes.ok) continue;
+      if (!blocksRes.ok) {
+        console.log("[notion] blocks fetch failed:", result.id, blocksRes.status);
+        continue;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const blocks = await blocksRes.json() as any;
+      const blockTypes = (blocks.results ?? []).map((b: any) => b.type);
+      console.log("[notion] page", result.id, "blocks:", blockTypes);
       for (const block of blocks.results ?? []) {
         if (block.type !== "child_database") continue;
         if (seen.has(block.id)) continue;
