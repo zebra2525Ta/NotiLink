@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await detectIntent(text, schemas, mode as Mode);
+    console.log("[memo] groq result:", JSON.stringify(result));
 
     if (result.intent === "query") {
       const schema = schemas.find((s) => s.id === result.database_id);

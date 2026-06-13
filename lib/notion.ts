@@ -226,9 +226,14 @@ export async function saveToNotion(
     );
     const notionProperties: Record<string, unknown> = {};
 
+    console.log("[notion] save: schema props:", JSON.stringify(schema.properties), "item props:", JSON.stringify(item.properties));
+
     for (const [name, value] of Object.entries(item.properties)) {
       const prop = propTypeMap.get(name.trim().toLowerCase());
-      if (!prop) continue;
+      if (!prop) {
+        console.log("[notion] save: no match for prop:", name, "available:", [...propTypeMap.keys()]);
+        continue;
+      }
       const formatted = formatProperty(value, prop.type);
       if (formatted) notionProperties[prop.name] = formatted;
     }
