@@ -42,22 +42,23 @@ async function findChildDatabases(accessToken: string, pageId: string, seen: Set
 }
 
 async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema | null> {
-  const res = await fetch(`https://api.notion.com/v1/databases/${id}`, {
-    headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    console.log("[notion] fetchDb failed:", id, res.status, JSON.stringify(err));
+  try {
+    const notion = new Client({ auth: accessToken });
+    const db = await notion.databases.retrieve({ database_id: id }) as unknown as {
+      title: Array<{ plain_text: string }>;
+      properties: Record<string, { type: string }>;
+    };
+    const title = db.title?.[0]?.plain_text ?? "無題";
+    const properties = Object.entries(db.properties ?? {}).map(([name, prop]) => ({
+      name,
+      type: prop.type,
+    }));
+    return { id, title, properties };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    console.log("[notion] fetchDb failed:", id, msg);
     return null;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = await res.json() as any;
-  const title = db.title?.[0]?.plain_text ?? "無題";
-  const properties = Object.entries(db.properties ?? {}).map(([name, prop]: [string, any]) => ({
-    name,
-    type: prop.type as string,
-  }));
-  return { id, title, properties };
 }
 
 export async function searchDatabases(accessToken: string): Promise<DbSchema[]> {

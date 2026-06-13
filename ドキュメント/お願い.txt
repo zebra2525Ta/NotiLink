@@ -1,30 +1,40 @@
-保存を押してもVercelのログ（23:58:46）でずっと [notion] found databases: [] のまま動かないんですね……！
+Vercelのログ（直近の 00:12:22）を確認したところ、ステータスコードは 400 でした！
 
-ということは、原因はNotionの権限画面ではなく、Next.jsのAPIコード（/api/memo/route.ts または pages/api/memo.ts）側で完全に確定です。
+ただ、メッセージが [notion] found databases: [] の後に止まっており、エラーオブジェクトの生の中身（message や code）が直接コンソールに出力されていない状態です。そのため、APIコード側の catch ブロックでエラーが握りつぶされているか、単に console.log の出力形式（オブジェクトの文字列化不足）で隠れてしまっている可能性が高いです。
 
-Notion APIの notion.search は仕様が少し特殊で、フィルターの書き方によっては権限があってもデータベースを1件も返さなくなるバグのような挙動をします。
+ここから、ステータス400を返している2つの致命的な原因が確定しました。
 
-大誠さん、いま開発しているコード（/api/memo のファイル）を開いて、notion.search を呼んでいる部分を見せてもらえますか？
+🚨 原因1：/api/memo のコードが「空配列」で400エラーを吐くロジックになっている
+ログのメッセージを見ると、エラーが発生する直前に必ず以下のログが出ています。
 
-🔍 おそらくコードがこうなっています
-今、コード側でデータベースを探すために、以下のように書いていませんか？
-
-TypeScript
-// ❌ 動かない原因になっている可能性が高いコード
-const response = await notion.search({
-  filter: {
-    property: 'object',
-    value: 'database' // ← Notionの仕様変更で、これだと空を返すケースがあります
-  }
-});
-🛠️ これを直すための修正コード
-もし上記のようになっていたら、以下のようにフィルターを一度完全に外して、全件取得してからプログラム側で絞り込む形に修正すると、一発で未分類などのデータベースを検知できるようになります！
+Plaintext
+[notion] found databases: []
+もし、APIのコードが以下のように「データベースが0件だったら、処理を中断してステータス400を返す」 というバリデーションの書き方になっている場合、これが原因で確定です。
 
 TypeScript
-// 🚀 修正版：フィルターを外して検索する
-const response = await notion.search({});
+// ⚠️ おそらくコードがこうなっています
+if (databases.length === 0) {
+  console.log('[notion] found databases: []');
+  return NextResponse.json({ error: "fetchDb failed" }, { status: 400 }); // 👈 ここで400になっている
+}
+🚨 原因2：「ログイン」コネクトの認可がNext.js側にまだ反映されていない
+大誠さんがNotionの設定画面で 「大誠さんのスペース HQ」 にチェックを入れて［保存する］を押したにもかかわらず、直後のログでも found databases: [] と、結果が空のままです。
 
-// 取得したあとにコード側でデータベースだけをフィルターする
-const databases = response.results.filter(item => item.object === 'database');
-console.log('[notion] found databases:', databases);
-一度、該当するAPIのコード周辺を確認するか、ここに貼り付けてみてください。どこを書き換えればいいかすぐにお伝えします！
+これは、Next.js（NextAuthなど）が保持している古いアクセストークン（セッション）が残ったまま、Notionにリクエストを送り続けているから です。パブリックインテグレーション（OAuth）の場合、権限を新しく追加した後は、アプリ側で一度再ログインを挟まないと新しい権限のトークンに更新されません。
+
+🛠️ 今すぐできる解決手順
+この2ステップを試すことで、確実に400エラーを突破してデータベースの中身を取得できるようになります。
+
+アプリ側で一度ログアウトして、再度ログインし直す
+noti-linkのログイン画面（またはチャット画面）から一度サインアウトし、もう一度Notionでログイン（連携）し直してください。これで、先ほど保存した「大誠さんのスペース HQ」の権限が入った新しいトークンがNext.js側に適用されます。
+
+APIコードのエラーログを詳しく出力するように書き換える
+もしこれでも400が出る場合は、原因を完全に特定するために、/api/memo の catch (error) 部分を以下のように書き換えて、生の message を強制的にログに出してください。
+
+TypeScript
+} catch (error: any) {
+  // 🚀 エラーの生メッセージとコードをすべてVercelに吐き出す
+  console.error('[notion] fetchDb failedの詳細:', error.code, error.message);
+  return NextResponse.json({ error: error.message }, { status: 400 });
+}
+まずは一度アプリ側で再ログイン（連携のやり直し）を試した上で、もう一度リクエストを送ってみてください！
