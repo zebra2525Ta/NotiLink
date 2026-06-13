@@ -42,10 +42,17 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
 }
 
 export async function queryDatabase(accessToken: string, databaseId: string): Promise<Record<string, string>[]> {
-  const notion = new Client({ auth: accessToken });
+  const res = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ page_size: 50 }),
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const response = await (notion.databases as any).query({ database_id: databaseId, page_size: 50 }) as any;
+  const response = await res.json() as any;
 
   return response.results.map((page: any) => {
     const row: Record<string, string> = {};
