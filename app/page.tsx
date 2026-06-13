@@ -73,7 +73,7 @@ export default function Home() {
 
         {/* 天気 */}
         <section>
-          <h2 className="text-xs text-gray-500 font-medium mb-3 tracking-widest uppercase">天気（東京）</h2>
+          <h2 className="text-xs text-gray-500 font-medium mb-3 tracking-widest uppercase">天気（大阪）</h2>
           <div className="bg-gray-800 rounded-2xl px-5 py-4">
             {weather ? (
               <div className="flex items-center justify-between">

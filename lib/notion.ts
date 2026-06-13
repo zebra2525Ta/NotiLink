@@ -40,6 +40,42 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
   return allDatabases;
 }
 
+export async function queryDatabase(accessToken: string, databaseId: string): Promise<Record<string, string>[]> {
+  const notion = new Client({ auth: accessToken });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response = await (notion.databases as any).query({ database_id: databaseId, page_size: 50 }) as any;
+
+  return response.results.map((page: any) => {
+    const row: Record<string, string> = {};
+    for (const [key, prop] of Object.entries(page.properties as Record<string, any>)) {
+      switch (prop.type) {
+        case "title":
+          row[key] = prop.title?.map((t: any) => t.plain_text).join("") ?? "";
+          break;
+        case "rich_text":
+          row[key] = prop.rich_text?.map((t: any) => t.plain_text).join("") ?? "";
+          break;
+        case "checkbox":
+          row[key] = prop.checkbox ? "✓" : "✗";
+          break;
+        case "date":
+          row[key] = prop.date?.start ?? "";
+          break;
+        case "select":
+          row[key] = prop.select?.name ?? "";
+          break;
+        case "number":
+          row[key] = prop.number != null ? String(prop.number) : "";
+          break;
+        default:
+          break;
+      }
+    }
+    return row;
+  });
+}
+
 function formatProperty(value: string, type: string): Record<string, unknown> | null {
   if (value === "" || value === undefined) return null;
   switch (type) {
@@ -72,19 +108,36 @@ export async function saveToNotion(
     const schema = schemaMap.get(item.database_id);
     if (!schema) continue;
 
-    const propTypeMap = new Map(schema.properties.map((p) => [p.name, p.type]));
+    // Build a normalized map: trimmed lowercase → {actualName, type}
+    const propTypeMap = new Map(
+      schema.properties.map((p) => [p.name.trim().toLowerCase(), { name: p.name, type: p.type }])
+    );
     const notionProperties: Record<string, unknown> = {};
 
     for (const [name, value] of Object.entries(item.properties)) {
-      const type = propTypeMap.get(name);
-      if (!type) continue;
-      const formatted = formatProperty(value, type);
-      if (formatted) notionProperties[name] = formatted;
+      const prop = propTypeMap.get(name.trim().toLowerCase());
+      if (!prop) continue;
+      const formatted = formatProperty(value, prop.type);
+      if (formatted) notionProperties[prop.name] = formatted;
     }
 
-    await notion.pages.create({
-      parent: { database_id: item.database_id },
-      properties: notionProperties as Parameters<typeof notion.pages.create>[0]["properties"],
-    });
+    // Notion requires at least one title property — add it if Groq omitted it
+    const titleProp = schema.properties.find((p) => p.type === "title");
+    if (titleProp && !notionProperties[titleProp.name]) {
+      const fallback = Object.values(item.properties).find(Boolean) ?? "";
+      notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+    }
+
+    console.log("[notion] creating page in DB:", schema.title, JSON.stringify(notionProperties));
+
+    try {
+      await notion.pages.create({
+        parent: { database_id: item.database_id },
+        properties: notionProperties as Parameters<typeof notion.pages.create>[0]["properties"],
+      });
+    } catch (err) {
+      console.error("[notion] pages.create failed:", JSON.stringify(err));
+      throw err;
+    }
   }
 }

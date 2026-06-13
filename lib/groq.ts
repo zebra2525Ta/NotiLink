@@ -3,28 +3,37 @@ import type { DbSchema } from "./notion";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-function buildSystemPrompt(schemas: DbSchema[]): string {
-  const dbDescriptions = schemas
+function buildDbList(schemas: DbSchema[]): string {
+  return schemas
     .map((db) => {
-      const props = db.properties.map((p) => `  - ${p.name} (${p.type})`).join("\n");
-      return `DB名: ${db.title}\nID: ${db.id}\nプロパティ:\n${props}`;
+      const props = db.properties
+        .map((p) => `    {"name":"${p.name}","type":"${p.type}"}`)
+        .join(",\n");
+      return `{"database_id":"${db.id}","db_title":"${db.title}","properties":[\n${props}\n  ]}`;
     })
-    .join("\n\n");
+    .join(",\n");
+}
 
-  return `あなたはメモを分析するAIです。以下のNotionデータベース一覧を参照し、入力テキストを適切なDBに振り分けてJSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
+function buildIntentPrompt(schemas: DbSchema[]): string {
+  return `あなたはNotionを管理するAI秘書です。ユーザーの入力が「登録」か「検索・質問」かを判断し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
 
-利用可能なデータベース:
-${dbDescriptions}
+利用可能なデータベース（database_idとdb_titleを必ずそのまま使うこと）:
+[
+${buildDbList(schemas)}
+]
 
-出力形式:
-{"items":[{"database_id":"DB_ID","properties":{"プロパティ名":"値"}}],"message":"秘書の一言（30文字以内）"}
+【登録の場合】入力例：「グミ買う」「明日14時会議」「東京行きたい」
+{"intent":"register","items":[{"database_id":"そのままコピー","properties":{"プロパティ名そのままコピー":"値"}}],"message":"秘書の一言（30文字以内）"}
 
-ルール:
-- 1つの入力から複数アイテムを抽出してよい（例:「グミと東京」→買い物DBと場所DBに分割）
-- checkboxタイプのプロパティは"false"を設定
-- dateタイプはYYYY-MM-DD形式、timeがある場合はYYYY-MM-DDTHH:MM:00形式
-- 値が不明な場合はそのプロパティを省略
-- 今日の日付を基準に相対日付（明日・来週など）を解決すること`;
+【検索・質問の場合】入力例：「買い物リスト教えて」「今週の予定は？」「行きたい場所一覧」
+{"intent":"query","database_id":"最も関連するDBのidをそのままコピー","message":null}
+
+登録ルール:
+- database_idとプロパティ名は上記リストの値をそのままコピー（変更禁止）
+- checkboxタイプは"false"を設定
+- dateタイプはYYYY-MM-DD形式、日時ならYYYY-MM-DDTHH:MM:00形式
+- titleタイプは必ず含めること
+- 今日の日付: ${new Date().toISOString().split("T")[0]}`;
 }
 
 const MODE_PROMPTS = {
@@ -35,22 +44,30 @@ const MODE_PROMPTS = {
 
 export type Mode = "normal" | "business" | "friend";
 
-export interface GroqResult {
+export interface RegisterResult {
+  intent: "register";
   items: { database_id: string; properties: Record<string, string> }[];
   message: string;
 }
 
-export async function classifyMemo(text: string, schemas: DbSchema[], mode: Mode = "normal"): Promise<GroqResult> {
-  const today = new Date().toISOString().split("T")[0];
+export interface QueryResult {
+  intent: "query";
+  database_id: string;
+  message: null;
+}
+
+export type GroqIntentResult = RegisterResult | QueryResult;
+
+export async function detectIntent(text: string, schemas: DbSchema[], mode: Mode = "normal"): Promise<GroqIntentResult> {
   const modePrompt = MODE_PROMPTS[mode];
-  const systemPrompt = buildSystemPrompt(schemas);
+  const systemPrompt = buildIntentPrompt(schemas);
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: `${systemPrompt}${modePrompt ? `\n\n${modePrompt}` : ""}\n\n今日の日付: ${today}`,
+        content: modePrompt ? `${systemPrompt}\n\n${modePrompt}` : systemPrompt,
       },
       { role: "user", content: text },
     ],
@@ -59,5 +76,34 @@ export async function classifyMemo(text: string, schemas: DbSchema[], mode: Mode
   });
 
   const content = completion.choices[0].message.content ?? "{}";
-  return JSON.parse(content) as GroqResult;
+  return JSON.parse(content) as GroqIntentResult;
+}
+
+export async function generateQueryResponse(
+  question: string,
+  dbTitle: string,
+  pages: Record<string, string>[],
+  mode: Mode = "normal"
+): Promise<string> {
+  const modePrompt = MODE_PROMPTS[mode];
+  const pagesText = pages.length === 0
+    ? "（データなし）"
+    : pages.map((p, i) => `${i + 1}. ${Object.values(p).filter(Boolean).join(" / ")}`).join("\n");
+
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      {
+        role: "system",
+        content: `あなたはAI秘書です。Notionデータベース「${dbTitle}」の内容をもとに、ユーザーの質問に日本語で簡潔に答えてください。${modePrompt}`,
+      },
+      {
+        role: "user",
+        content: `質問: ${question}\n\nデータベースの内容:\n${pagesText}`,
+      },
+    ],
+    temperature: 0.3,
+  });
+
+  return completion.choices[0].message.content ?? "データを取得できませんでした。";
 }

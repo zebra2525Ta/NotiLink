@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { classifyMemo, type Mode } from "@/lib/groq";
-import { searchDatabases, saveToNotion } from "@/lib/notion";
+import { detectIntent, generateQueryResponse, type Mode } from "@/lib/groq";
+import { searchDatabases, queryDatabase, saveToNotion } from "@/lib/notion";
 import { auth } from "@/auth";
 
 export async function POST(req: NextRequest) {
@@ -20,13 +20,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Notionにデータベースが見つかりません" }, { status: 400 });
     }
 
-    const result = await classifyMemo(text, schemas, mode as Mode);
-    await saveToNotion(result.items, session.accessToken, schemas);
+    const result = await detectIntent(text, schemas, mode as Mode);
 
+    if (result.intent === "query") {
+      const schema = schemas.find((s) => s.id === result.database_id);
+      const pages = await queryDatabase(session.accessToken, result.database_id);
+      const message = await generateQueryResponse(text, schema?.title ?? "DB", pages, mode as Mode);
+      return NextResponse.json({ message });
+    }
+
+    // intent === "register"
+    await saveToNotion(result.items, session.accessToken, schemas);
     return NextResponse.json({ message: result.message, count: result.items.length });
+
   } catch (error) {
     console.error("[memo]", error);
-    const msg = error instanceof Error ? error.message : "保存に失敗しました";
+    const msg = error instanceof Error ? error.message : "エラーが発生しました";
     return NextResponse.json({ message: msg }, { status: 500 });
   }
 }
