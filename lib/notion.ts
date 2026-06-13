@@ -62,37 +62,78 @@ async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema 
 }
 
 export async function searchDatabases(accessToken: string): Promise<DbSchema[]> {
-  const notion = new Client({ auth: accessToken });
   const allDatabases: DbSchema[] = [];
-  const seen = new Set<string>();
+  const seenIds = new Set<string>();
 
-  const response = await notion.search({ page_size: 100 }) as unknown as {
-    results: { id: string; object: string }[];
-  };
+  const res = await fetch("https://api.notion.com/v1/search", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ page_size: 100 }),
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = await res.json() as any;
 
-  if (!Array.isArray(response.results)) {
-    console.error("[notion] search unexpected response:", JSON.stringify(response));
+  if (!Array.isArray(data.results)) {
+    console.error("[notion] search failed:", JSON.stringify(data));
     return [];
   }
 
-  console.log("[notion] all results:", response.results.map((r: any) => ({ id: r.id, object: r.object, title: r.title?.[0]?.plain_text ?? r.properties?.title?.title?.[0]?.plain_text ?? "?" })));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  console.log("[notion] all results:", data.results.map((r: any) => ({
+    id: r.id,
+    object: r.object,
+    parent: r.parent,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    title: (r.title as any[])?.[0]?.plain_text ?? (r.properties?.title?.title as any[])?.[0]?.plain_text ?? "?",
+  })));
 
-  for (const result of response.results) {
-    if (seen.has(result.id)) continue;
-    seen.add(result.id);
+  const dbIdsToTry = new Set<string>();
+  const pageIdsToTraverse = new Set<string>();
 
-    // Try every result as a database regardless of object type
-    const schema = await fetchDbSchema(accessToken, result.id);
-    if (schema) {
-      allDatabases.push(schema);
-      continue;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const result of data.results as any[]) {
+    const id: string = result.id;
+    const object: string = result.object;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parent: any = result.parent;
+
+    if (object === "database") {
+      dbIdsToTry.add(id);
+      // Also traverse parent page (inline DBs have parent.type === "page_id")
+      if (parent?.type === "page_id") pageIdsToTraverse.add(parent.page_id);
+      // Linked DB view has parent.type === "database_id" pointing to the real DB
+      if (parent?.type === "database_id") dbIdsToTry.add(parent.database_id);
+    } else if (object === "page") {
+      if (parent?.type === "database_id") {
+        // This page is an item inside a database — get that database
+        dbIdsToTry.add(parent.database_id);
+      } else {
+        // Top-level or page-nested page — traverse its children for inline DBs
+        pageIdsToTraverse.add(id);
+        // Also traverse parent page if nested
+        if (parent?.type === "page_id") pageIdsToTraverse.add(parent.page_id);
+      }
     }
+  }
 
-    // If not a database itself, check its children for inline DBs
-    if (result.object === "page") {
-      const nested = await findChildDatabases(accessToken, result.id, seen);
-      allDatabases.push(...nested);
-    }
+  // Fetch schemas for all discovered database IDs
+  for (const dbId of dbIdsToTry) {
+    if (seenIds.has(dbId)) continue;
+    seenIds.add(dbId);
+    const schema = await fetchDbSchema(accessToken, dbId);
+    if (schema) allDatabases.push(schema);
+  }
+
+  // Traverse pages to find child_database blocks
+  for (const pageId of pageIdsToTraverse) {
+    if (seenIds.has(`page:${pageId}`)) continue;
+    seenIds.add(`page:${pageId}`);
+    const nested = await findChildDatabases(accessToken, pageId, seenIds);
+    allDatabases.push(...nested);
   }
 
   console.log("[notion] found databases:", allDatabases.map(d => ({ id: d.id, title: d.title })));
