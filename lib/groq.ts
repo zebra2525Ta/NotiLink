@@ -94,8 +94,10 @@ ${examplesText}
 
 ルール:
 - キー名は上記プロパティ定義の名前を1文字も変えずコピー（英語・ローマ字変換・翻訳禁止）
+- title型のプロパティ: イベント名・物品名・メモ本文など「内容」のみを入れる。日付・時刻は絶対に含めないこと（例: "6/19バイト"→"バイト"）
+- date型のプロパティ: 日付・時刻のみを YYYY-MM-DD 形式で入れる（日時なら YYYY-MM-DDTHH:MM:00）
+- rich_text型のプロパティ: 補足説明・メモなどを入れる
 - checkbox型は "true" または "false" の文字列
-- date型は YYYY-MM-DD 形式（日時なら YYYY-MM-DDTHH:MM:00）
 - title型のプロパティは必ず含めること
 - 今日の日付: ${new Date().toISOString().split("T")[0]}
 ${modeHint ? `- ${modeHint}` : ""}
