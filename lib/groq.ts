@@ -63,15 +63,16 @@ ${modeHint ? `- ${modeHint}` : ""}`;
 
 function buildDateContext(): string {
   const DAY = ["日", "月", "火", "水", "木", "金", "土"];
-  const now = new Date();
-  const todayDow = now.getDay();
-  const lines: string[] = [`今日: ${now.toISOString().split("T")[0]}（${DAY[todayDow]}曜日）`];
-  // 明日〜14日後の日付と曜日を列挙
+  // JST = UTC+9
+  const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const toJSTDateStr = (d: Date) => d.toISOString().split("T")[0];
+
+  const todayDow = jstNow.getUTCDay();
+  const lines: string[] = [`今日: ${toJSTDateStr(jstNow)}（${DAY[todayDow]}曜日）`];
   for (let i = 1; i <= 14; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + i);
+    const d = new Date(jstNow.getTime() + i * 24 * 60 * 60 * 1000);
     const label = i === 1 ? "明日" : `${i}日後`;
-    lines.push(`${label}: ${d.toISOString().split("T")[0]}（${DAY[d.getDay()]}曜日）`);
+    lines.push(`${label}: ${toJSTDateStr(d)}（${DAY[d.getUTCDay()]}曜日）`);
   }
   return lines.join("\n");
 }
@@ -113,10 +114,10 @@ ${buildDateContext()}
 ルール:
 - キー名は上記プロパティ定義の名前を1文字も変えずコピー（英語・ローマ字変換・翻訳禁止）
 - title型: イベント名・物品名など「内容のみ」。日付・時刻は絶対含めない（例: "6/19バイト"→"バイト"）
-- date型: 必ず "開始~終了" のチルダ区切りで返す（24時間表記）
-  ・日付のみ → "YYYY-MM-DDT00:00:00~YYYY-MM-DDT23:58:00"
-  ・日付+開始時間 → "YYYY-MM-DDTHH:MM:00~YYYY-MM-DDT23:58:00"
-  ・日付+開始〜終了時間 → "YYYY-MM-DDTHH:MM:00~YYYY-MM-DDTHH:MM:00"
+- date型: 必ず "開始~終了" のチルダ区切りで返す。時刻はJST（日本時間）で24時間表記、必ず+09:00を付ける
+  ・日付のみ → "YYYY-MM-DDT00:00:00+09:00~YYYY-MM-DDT23:58:00+09:00"
+  ・日付+開始時間 → "YYYY-MM-DDTHH:MM:00+09:00~YYYY-MM-DDT23:58:00+09:00"
+  ・日付+開始〜終了時間 → "YYYY-MM-DDTHH:MM:00+09:00~YYYY-MM-DDTHH:MM:00+09:00"
 - rich_text型: 補足・メモ
 - checkbox型: "true" または "false"
 - title型は必ず含める
