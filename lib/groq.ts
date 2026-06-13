@@ -113,7 +113,14 @@ ${modeHint ? `- ${modeHint}` : ""}
   });
 
   const content = completion.choices[0].message.content ?? "{}";
-  return JSON.parse(content) as Record<string, string>;
+  console.log("[groq] generateProperties raw:", content);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let parsed = JSON.parse(content) as any;
+  // Groqが {"properties": {...}} と返す場合があるので unwrap
+  if (parsed.properties && typeof parsed.properties === "object" && !Array.isArray(parsed.properties)) {
+    parsed = parsed.properties;
+  }
+  return parsed as Record<string, string>;
 }
 
 // ── クエリ結果を自然言語で返す ────────────────────────────────────────

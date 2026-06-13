@@ -43,6 +43,12 @@ export async function POST(req: NextRequest) {
     const properties = await generateProperties(text, schema, examples, mode as Mode);
     console.log("[memo] generated properties:", JSON.stringify(properties));
 
+    // 最後の砦: Groqが {} を返してもタイトルプロパティにユーザー入力を入れる
+    if (Object.keys(properties).length === 0) {
+      const titleProp = schema.properties.find((p) => p.type === "title");
+      if (titleProp) properties[titleProp.name] = text;
+    }
+
     await saveToNotion([{ database_id: intent.database_id, properties }], session.accessToken, schemas);
 
     return NextResponse.json({ message: intent.message, count: 1 });
