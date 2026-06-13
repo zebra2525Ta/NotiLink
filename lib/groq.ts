@@ -62,18 +62,53 @@ ${modeHint ? `- ${modeHint}` : ""}`;
 }
 
 function buildDateContext(): string {
-  const DAY = ["日", "月", "火", "水", "木", "金", "土"];
+  const DAY_NAME = ["日", "月", "火", "水", "木", "金", "土"];
+  const DAY_LABEL = ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"];
   // JST = UTC+9
   const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const toJSTDateStr = (d: Date) => d.toISOString().split("T")[0];
+  const toStr = (d: Date) => d.toISOString().split("T")[0];
+  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86400000);
 
-  const todayDow = jstNow.getUTCDay();
-  const lines: string[] = [`今日: ${toJSTDateStr(jstNow)}（${DAY[todayDow]}曜日）`];
-  for (let i = 1; i <= 14; i++) {
-    const d = new Date(jstNow.getTime() + i * 24 * 60 * 60 * 1000);
-    const label = i === 1 ? "明日" : `${i}日後`;
-    lines.push(`${label}: ${toJSTDateStr(d)}（${DAY[d.getUTCDay()]}曜日）`);
+  const todayDow = jstNow.getUTCDay(); // 0=日,1=月,...,6=土
+
+  // 月曜始まりの週で「今週」「来週」「再来週」を定義
+  // 今週の月曜 = 今日 - (todayDow === 0 ? 6 : todayDow - 1)
+  const daysFromMon = todayDow === 0 ? 6 : todayDow - 1;
+  const thisMonday = addDays(jstNow, -daysFromMon);
+
+  const lines: string[] = [
+    `【今日】 ${toStr(jstNow)}（${DAY_NAME[todayDow]}曜日）`,
+    `【明日】 ${toStr(addDays(jstNow, 1))}（${DAY_LABEL[(todayDow + 1) % 7]}）`,
+    "",
+    "【今週 月〜日】",
+  ];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(thisMonday, i);
+    lines.push(`  今週${DAY_LABEL[i === 6 ? 0 : i + 1 === 7 ? 0 : (i + 1)]}: `);
   }
+  // 今週
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(thisMonday, i);
+    const dow = d.getUTCDay();
+    lines[lines.length - 7 + i] = `  今週${DAY_LABEL[dow]}: ${toStr(d)}`;
+  }
+
+  lines.push("", "【来週 月〜日】");
+  const nextMonday = addDays(thisMonday, 7);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(nextMonday, i);
+    const dow = d.getUTCDay();
+    lines.push(`  来週${DAY_LABEL[dow]}: ${toStr(d)}`);
+  }
+
+  lines.push("", "【再来週 月〜日】");
+  const weekAfter = addDays(thisMonday, 14);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekAfter, i);
+    const dow = d.getUTCDay();
+    lines.push(`  再来週${DAY_LABEL[dow]}: ${toStr(d)}`);
+  }
+
   return lines.join("\n");
 }
 
