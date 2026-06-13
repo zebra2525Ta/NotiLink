@@ -19,27 +19,20 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
   let cursor: string | undefined;
 
   do {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await (notion.search as any)({
-      filter: { property: "object", value: "data_source" },
+    const response = await notion.search({
       page_size: 100,
       ...(cursor ? { start_cursor: cursor } : {}),
-    }) as { results: NotionDbRaw[]; has_more: boolean; next_cursor: string | null };
+    }) as unknown as { results: NotionDbRaw[]; has_more: boolean; next_cursor: string | null };
 
     if (!Array.isArray(response.results)) {
       console.error("[notion] search unexpected response:", JSON.stringify(response));
       break;
     }
 
+    console.log("[notion] search results:", response.results.map(r => ({ id: r.id, object: r.object })));
+
     for (const result of response.results) {
-      // アクセス権がないDBはスキップ
-      const checkRes = await fetch(`https://api.notion.com/v1/databases/${result.id}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Notion-Version": "2022-06-28",
-        },
-      });
-      if (!checkRes.ok) continue;
+      if (result.object !== "database") continue;
 
       const title = result.title?.[0]?.plain_text ?? "無題";
       const properties = Object.entries(result.properties ?? {}).map(([name, prop]) => ({
