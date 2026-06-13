@@ -1,22 +1,31 @@
 import Groq from "groq-sdk";
+import type { DbSchema } from "./notion";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const SYSTEM_PROMPT = `あなたはメモを分析するAIです。ユーザーの入力テキストを解析し、含まれるアイテムをすべて登録対象として以下のJSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
+function buildSystemPrompt(schemas: DbSchema[]): string {
+  const dbDescriptions = schemas
+    .map((db) => {
+      const props = db.properties.map((p) => `  - ${p.name} (${p.type})`).join("\n");
+      return `DB名: ${db.title}\nID: ${db.id}\nプロパティ:\n${props}`;
+    })
+    .join("\n\n");
 
-分類ルール:
-- "schedule": 日付・時間・予定・約束・イベントに関するもの
-- "places": 行きたい場所・スポット・観光地に関するもの
-- "shopping": 買い物・購入したいもの・欲しいものに関するもの
-- "misc": 上記に分類できないもの、または曖昧なもの
+  return `あなたはメモを分析するAIです。以下のNotionデータベース一覧を参照し、入力テキストを適切なDBに振り分けてJSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
 
-出力形式（itemsは必ず配列。1件でも配列に入れること）:
-{"items":[{"db":"schedule","data":{"title":"タイトル","date":"YYYY-MM-DD","time":"HH:MM","memo":"補足"}},{"db":"places","data":{"placeName":"場所名","area":"地域・エリア","memo":"メモ"}},{"db":"shopping","data":{"itemName":"商品名","quantity":"数量（不明なら空文字）"}},{"db":"misc","data":{"text":"元のテキストそのまま"}}],"message":"秘書の一言（30文字以内）"}
+利用可能なデータベース:
+${dbDescriptions}
 
-注意:
-- 入力に複数のアイテムが含まれる場合、itemsに複数要素を追加すること（例:「グミ、東京」→ shoppingにグミ、placesに東京を別々に登録）
-- timeが不明な場合はtime:""、dateが不明な場合はdate:""とすること
+出力形式:
+{"items":[{"database_id":"DB_ID","properties":{"プロパティ名":"値"}}],"message":"秘書の一言（30文字以内）"}
+
+ルール:
+- 1つの入力から複数アイテムを抽出してよい（例:「グミと東京」→買い物DBと場所DBに分割）
+- checkboxタイプのプロパティは"false"を設定
+- dateタイプはYYYY-MM-DD形式、timeがある場合はYYYY-MM-DDTHH:MM:00形式
+- 値が不明な場合はそのプロパティを省略
 - 今日の日付を基準に相対日付（明日・来週など）を解決すること`;
+}
 
 const MODE_PROMPTS = {
   normal: "",
@@ -26,26 +35,22 @@ const MODE_PROMPTS = {
 
 export type Mode = "normal" | "business" | "friend";
 
-export interface GroqItem {
-  db: "schedule" | "places" | "shopping" | "misc";
-  data: Record<string, string>;
-}
-
 export interface GroqResult {
-  items: GroqItem[];
+  items: { database_id: string; properties: Record<string, string> }[];
   message: string;
 }
 
-export async function classifyMemo(text: string, mode: Mode = "normal"): Promise<GroqResult> {
+export async function classifyMemo(text: string, schemas: DbSchema[], mode: Mode = "normal"): Promise<GroqResult> {
   const today = new Date().toISOString().split("T")[0];
   const modePrompt = MODE_PROMPTS[mode];
+  const systemPrompt = buildSystemPrompt(schemas);
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: `${SYSTEM_PROMPT}${modePrompt ? `\n\n${modePrompt}` : ""}\n\n今日の日付: ${today}`,
+        content: `${systemPrompt}${modePrompt ? `\n\n${modePrompt}` : ""}\n\n今日の日付: ${today}`,
       },
       { role: "user", content: text },
     ],
