@@ -55,9 +55,8 @@ async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema 
     const title: string = db.title?.[0]?.plain_text ?? db.title?.[0]?.text?.content ?? "無題";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rawProps: Record<string, any> = db.properties ?? {};
-    // ログ: 最初のプロパティの生の構造を確認
-    const firstKey = Object.keys(rawProps)[0];
-    if (firstKey) console.log("[notion] fetchDb first prop sample:", firstKey, JSON.stringify(rawProps[firstKey]));
+    console.log("[notion] fetchDb rawProps keys:", Object.keys(rawProps));
+    console.log("[notion] fetchDb rawProps full:", JSON.stringify(rawProps).substring(0, 600));
     const properties = Object.entries(rawProps).map(([name, prop]) => ({
       name,
       type: (prop.type ?? prop.config?.type ?? "unknown") as string,
