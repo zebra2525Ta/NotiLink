@@ -228,21 +228,34 @@ export async function saveToNotion(
 
     console.log("[notion] save: schema props:", JSON.stringify(schema.properties), "item props:", JSON.stringify(item.properties));
 
+    const unmatchedValues: string[] = [];
+
     for (const [name, value] of Object.entries(item.properties)) {
       const prop = propTypeMap.get(name.trim().toLowerCase());
       if (!prop) {
         console.log("[notion] save: no match for prop:", name, "available:", [...propTypeMap.keys()]);
+        if (value) unmatchedValues.push(value);
         continue;
       }
       const formatted = formatProperty(value, prop.type);
       if (formatted) notionProperties[prop.name] = formatted;
     }
 
-    // Notion requires at least one title property — add it if Groq omitted it
+    // Fallback 1: if title property not yet set, use first unmatched value
     const titleProp = schema.properties.find((p) => p.type === "title");
     if (titleProp && !notionProperties[titleProp.name]) {
-      const fallback = Object.values(item.properties).find(Boolean) ?? "";
-      notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+      const fallback = unmatchedValues[0] ?? Object.values(item.properties).find(Boolean) ?? "";
+      if (fallback) {
+        notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+      }
+    }
+
+    // Fallback 2: if still nothing mapped, dump all unmatched string values into title
+    if (Object.keys(notionProperties).length === 0 && titleProp) {
+      const allValues = Object.values(item.properties).filter(Boolean).join(" ");
+      if (allValues) {
+        notionProperties[titleProp.name] = { title: [{ text: { content: allValues } }] };
+      }
     }
 
     console.log("[notion] creating page in DB:", schema.title, JSON.stringify(notionProperties));

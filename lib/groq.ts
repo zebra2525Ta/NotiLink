@@ -17,22 +17,23 @@ function buildDbList(schemas: DbSchema[]): string {
 function buildIntentPrompt(schemas: DbSchema[]): string {
   return `あなたはNotionを管理するAI秘書です。ユーザーの入力が「登録」か「検索・質問」かを判断し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
 
-利用可能なデータベース（database_idとdb_titleを必ずそのまま使うこと）:
+利用可能なデータベース:
 [
 ${buildDbList(schemas)}
 ]
 
 【登録の場合】入力例：「グミ買う」「明日14時会議」「東京行きたい」
-{"intent":"register","items":[{"database_id":"そのままコピー","properties":{"プロパティ名そのままコピー":"値"}}],"message":"秘書の一言（30文字以内）"}
+{"intent":"register","items":[{"database_id":"上記のdatabase_idをそのままコピー","properties":{"上記のname値をそのままコピー":"値"}}],"message":"秘書の一言（30文字以内）"}
 
 【検索・質問の場合】入力例：「買い物リスト教えて」「今週の予定は？」「行きたい場所一覧」
-{"intent":"query","database_id":"最も関連するDBのidをそのままコピー","message":null}
+{"intent":"query","database_id":"最も関連するDBのdatabase_idをそのままコピー","message":null}
 
-登録ルール:
-- database_idとプロパティ名は上記リストの値をそのままコピー（変更禁止）
+【厳守ルール】
+- database_id: 上記リストの"database_id"フィールドの値を1文字も変えずコピー
+- propertiesのキー名: 上記リストの"name"フィールドの値を1文字も変えずコピー（英語・ローマ字への変換・翻訳は絶対禁止）
 - checkboxタイプは"false"を設定
 - dateタイプはYYYY-MM-DD形式、日時ならYYYY-MM-DDTHH:MM:00形式
-- titleタイプは必ず含めること
+- titleタイプのプロパティは必ず含めること
 - 今日の日付: ${new Date().toISOString().split("T")[0]}`;
 }
 
