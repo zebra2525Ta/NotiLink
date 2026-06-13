@@ -13,45 +13,62 @@ export interface DbSchema {
   properties: { name: string; type: string }[];
 }
 
+async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema | null> {
+  const res = await fetch(`https://api.notion.com/v1/databases/${id}`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
+  });
+  if (!res.ok) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = await res.json() as any;
+  const title = db.title?.[0]?.plain_text ?? "無題";
+  const properties = Object.entries(db.properties ?? {}).map(([name, prop]: [string, any]) => ({
+    name,
+    type: prop.type as string,
+  }));
+  return { id, title, properties };
+}
+
 export async function searchDatabases(accessToken: string): Promise<DbSchema[]> {
   const notion = new Client({ auth: accessToken });
   const allDatabases: DbSchema[] = [];
-  let cursor: string | undefined;
+  const seen = new Set<string>();
 
-  do {
-    const response = await notion.search({
-      page_size: 100,
-      ...(cursor ? { start_cursor: cursor } : {}),
-    }) as unknown as { results: NotionDbRaw[]; has_more: boolean; next_cursor: string | null };
+  const response = await notion.search({ page_size: 100 }) as unknown as {
+    results: { id: string; object: string }[];
+  };
 
-    if (!Array.isArray(response.results)) {
-      console.error("[notion] search unexpected response:", JSON.stringify(response));
-      break;
+  if (!Array.isArray(response.results)) {
+    console.error("[notion] search unexpected response:", JSON.stringify(response));
+    return [];
+  }
+
+  for (const result of response.results) {
+    // standalone database
+    if (result.object === "database" && !seen.has(result.id)) {
+      seen.add(result.id);
+      const schema = await fetchDbSchema(accessToken, result.id);
+      if (schema) allDatabases.push(schema);
     }
 
-    for (const result of response.results) {
-      // standalone DB と inline DB（object: "page"）両方を試す
-      const dbRes = await fetch(`https://api.notion.com/v1/databases/${result.id}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Notion-Version": "2022-06-28",
-        },
+    // page — check blocks for inline (child_database) databases
+    if (result.object === "page") {
+      const blocksRes = await fetch(`https://api.notion.com/v1/blocks/${result.id}/children?page_size=100`, {
+        headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
       });
-      if (!dbRes.ok) continue;
-
+      if (!blocksRes.ok) continue;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = await dbRes.json() as any;
-      const title = db.title?.[0]?.plain_text ?? "無題";
-      const properties = Object.entries(db.properties ?? {}).map(([name, prop]: [string, any]) => ({
-        name,
-        type: prop.type as string,
-      }));
-      allDatabases.push({ id: result.id, title, properties });
+      const blocks = await blocksRes.json() as any;
+      for (const block of blocks.results ?? []) {
+        if (block.type !== "child_database") continue;
+        if (seen.has(block.id)) continue;
+        seen.add(block.id);
+        const schema = await fetchDbSchema(accessToken, block.id);
+        if (schema) allDatabases.push(schema);
+      }
     }
+  }
 
-    cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined;
-  } while (cursor);
-
+  console.log("[notion] found databases:", allDatabases.map(d => ({ id: d.id, title: d.title })));
   return allDatabases;
 }
 
