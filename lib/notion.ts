@@ -13,6 +13,34 @@ export interface DbSchema {
   properties: { name: string; type: string }[];
 }
 
+async function findChildDatabases(accessToken: string, pageId: string, seen: Set<string>, depth = 0): Promise<DbSchema[]> {
+  if (depth > 2) return [];
+  const res = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children?page_size=100`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
+  });
+  if (!res.ok) {
+    console.log("[notion] blocks failed:", pageId, res.status);
+    return [];
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = await res.json() as any;
+  const schemas: DbSchema[] = [];
+
+  for (const block of data.results ?? []) {
+    if (block.type === "child_database" && !seen.has(block.id)) {
+      seen.add(block.id);
+      const schema = await fetchDbSchema(accessToken, block.id);
+      if (schema) schemas.push(schema);
+    }
+    if (block.type === "child_page" && !seen.has(block.id)) {
+      seen.add(block.id);
+      const nested = await findChildDatabases(accessToken, block.id, seen, depth + 1);
+      schemas.push(...nested);
+    }
+  }
+  return schemas;
+}
+
 async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema | null> {
   const res = await fetch(`https://api.notion.com/v1/databases/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
@@ -42,6 +70,8 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
     return [];
   }
 
+  console.log("[notion] all results:", response.results.map((r: any) => ({ id: r.id, object: r.object, title: r.title?.[0]?.plain_text ?? r.properties?.title?.title?.[0]?.plain_text ?? "?" })));
+
   for (const result of response.results) {
     // standalone database
     if (result.object === "database" && !seen.has(result.id)) {
@@ -50,26 +80,11 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
       if (schema) allDatabases.push(schema);
     }
 
-    // page — check blocks for inline (child_database) databases
-    if (result.object === "page") {
-      const blocksRes = await fetch(`https://api.notion.com/v1/blocks/${result.id}/children?page_size=100`, {
-        headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
-      });
-      if (!blocksRes.ok) {
-        console.log("[notion] blocks fetch failed:", result.id, blocksRes.status);
-        continue;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const blocks = await blocksRes.json() as any;
-      const blockTypes = (blocks.results ?? []).map((b: any) => b.type);
-      console.log("[notion] page", result.id, "blocks:", blockTypes);
-      for (const block of blocks.results ?? []) {
-        if (block.type !== "child_database") continue;
-        if (seen.has(block.id)) continue;
-        seen.add(block.id);
-        const schema = await fetchDbSchema(accessToken, block.id);
-        if (schema) allDatabases.push(schema);
-      }
+    // page — recursively find child_database blocks
+    if (result.object === "page" && !seen.has(result.id)) {
+      seen.add(result.id);
+      const nested = await findChildDatabases(accessToken, result.id, seen);
+      allDatabases.push(...nested);
     }
   }
 
