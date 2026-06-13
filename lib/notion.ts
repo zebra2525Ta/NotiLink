@@ -228,30 +228,63 @@ export async function saveToNotion(
 
     console.log("[notion] save: schema props:", JSON.stringify(schema.properties), "item props:", JSON.stringify(item.properties));
 
-    const unmatchedValues: string[] = [];
+    // Groqが返す英語キー → Notionプロパティ型へのマッピング
+    const groqKeyToType: Record<string, string> = {
+      title: "title", name: "title", item: "title", text: "title",
+      テキスト: "title", タイトル: "title", 商品名: "title",
+      date: "date", time: "date", 日付: "date", 日時: "date",
+      memo: "rich_text", content: "rich_text", description: "rich_text",
+      quantity: "rich_text", amount: "rich_text", メモ: "rich_text", 数量: "rich_text",
+      done: "checkbox", completed: "checkbox", purchased: "checkbox",
+      購入済み: "checkbox",
+    };
+
+    // スキーマの型 → プロパティ名 のマップ（型ベースマッチ用）
+    const typeToSchemaProps = new Map<string, { name: string; type: string }[]>();
+    for (const p of schema.properties) {
+      const list = typeToSchemaProps.get(p.type) ?? [];
+      list.push(p);
+      typeToSchemaProps.set(p.type, list);
+    }
+
+    const alreadyAssigned = new Set<string>();
 
     for (const [name, value] of Object.entries(item.properties)) {
-      const prop = propTypeMap.get(name.trim().toLowerCase());
-      if (!prop) {
-        console.log("[notion] save: no match for prop:", name, "available:", [...propTypeMap.keys()]);
-        if (value) unmatchedValues.push(value);
+      if (!value) continue;
+      const key = name.trim().toLowerCase();
+
+      // ① 名前の完全一致（case-insensitive）
+      const exactProp = propTypeMap.get(key);
+      if (exactProp && !alreadyAssigned.has(exactProp.name)) {
+        const formatted = formatProperty(value, exactProp.type);
+        if (formatted) {
+          notionProperties[exactProp.name] = formatted;
+          alreadyAssigned.add(exactProp.name);
+        }
         continue;
       }
-      const formatted = formatProperty(value, prop.type);
-      if (formatted) notionProperties[prop.name] = formatted;
-    }
 
-    // Fallback 1: if title property not yet set, use first unmatched value
-    const titleProp = schema.properties.find((p) => p.type === "title");
-    if (titleProp && !notionProperties[titleProp.name]) {
-      const fallback = unmatchedValues[0] ?? Object.values(item.properties).find(Boolean) ?? "";
-      if (fallback) {
-        notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+      // ② 型ベースマッチ（Groqが英語キーを返した場合）
+      const targetType = groqKeyToType[key];
+      if (targetType) {
+        const candidates = typeToSchemaProps.get(targetType) ?? [];
+        const candidate = candidates.find((c) => !alreadyAssigned.has(c.name));
+        if (candidate) {
+          const formatted = formatProperty(value, candidate.type);
+          if (formatted) {
+            notionProperties[candidate.name] = formatted;
+            alreadyAssigned.add(candidate.name);
+          }
+          continue;
+        }
       }
+
+      console.log("[notion] save: no match for prop:", name, "available:", [...propTypeMap.keys()]);
     }
 
-    // Fallback 2: if still nothing mapped, dump all unmatched string values into title
-    if (Object.keys(notionProperties).length === 0 && titleProp) {
+    // Fallback: titleプロパティがまだ未設定なら全値を結合して入れる
+    const titleProp = schema.properties.find((p) => p.type === "title");
+    if (titleProp && !alreadyAssigned.has(titleProp.name)) {
       const allValues = Object.values(item.properties).filter(Boolean).join(" ");
       if (allValues) {
         notionProperties[titleProp.name] = { title: [{ text: { content: allValues } }] };
