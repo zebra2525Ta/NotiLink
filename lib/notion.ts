@@ -73,16 +73,18 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
   console.log("[notion] all results:", response.results.map((r: any) => ({ id: r.id, object: r.object, title: r.title?.[0]?.plain_text ?? r.properties?.title?.title?.[0]?.plain_text ?? "?" })));
 
   for (const result of response.results) {
-    // standalone database
-    if (result.object === "database" && !seen.has(result.id)) {
-      seen.add(result.id);
-      const schema = await fetchDbSchema(accessToken, result.id);
-      if (schema) allDatabases.push(schema);
+    if (seen.has(result.id)) continue;
+    seen.add(result.id);
+
+    // Try every result as a database regardless of object type
+    const schema = await fetchDbSchema(accessToken, result.id);
+    if (schema) {
+      allDatabases.push(schema);
+      continue;
     }
 
-    // page — recursively find child_database blocks
-    if (result.object === "page" && !seen.has(result.id)) {
-      seen.add(result.id);
+    // If not a database itself, check its children for inline DBs
+    if (result.object === "page") {
       const nested = await findChildDatabases(accessToken, result.id, seen);
       allDatabases.push(...nested);
     }
