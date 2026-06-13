@@ -19,12 +19,10 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
   let cursor: string | undefined;
 
   do {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await (notion.search as any)({
-      filter: { property: "object", value: "database" },
+    const response = await notion.search({
       page_size: 100,
       ...(cursor ? { start_cursor: cursor } : {}),
-    }) as { results: NotionDbRaw[]; has_more: boolean; next_cursor: string | null };
+    }) as unknown as { results: NotionDbRaw[]; has_more: boolean; next_cursor: string | null };
 
     for (const result of response.results) {
       if (result.object !== "database") continue;
