@@ -12,9 +12,10 @@ const MODE_PROMPTS: Record<Mode, string> = {
 };
 
 export interface IntentResult {
-  intent: "register" | "query";
+  intent: "register" | "query" | "update_purchased";
   database_id: string;
   message: string | null;
+  search_title?: string; // update_purchased時: 検索するアイテム名
 }
 
 // ── Phase 1: どのDBか・登録か検索かを判断 ──────────────────────────────
@@ -29,22 +30,26 @@ export async function detectIntent(
 
   const modeHint = MODE_PROMPTS[mode];
 
-  const systemPrompt = `あなたはNotionを管理するAI秘書です。ユーザーの入力が「登録」か「検索・質問」かを判断し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
+  const systemPrompt = `あなたはNotionを管理するAI秘書です。ユーザーの入力を以下の3種類に分類し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
 
 利用可能なデータベース:
 [
 ${dbList}
 ]
 
-【登録の場合】
+【登録の場合】新しいデータを追加する（「〜買う」「〜予定」「〜行きたい」など）
 {"intent":"register","database_id":"最も適切なdatabase_idをそのままコピー","message":"秘書の一言（30文字以内）"}
 
-【検索・質問の場合】
+【購入済み更新の場合】既存アイテムを買った・購入した・チェックしたいとき（「〜買った」「〜購入した」「〜ゲットした」など）
+{"intent":"update_purchased","database_id":"買い物リストのdatabase_id","search_title":"アイテム名のみ","message":"秘書の一言（30文字以内）"}
+
+【検索・質問の場合】データベースの内容を知りたいとき（「〜教えて」「〜一覧」「〜は？」など）
 {"intent":"query","database_id":"最も関連するdatabase_idをそのままコピー","message":null}
 
 ルール:
 - database_idは上記リストの値を1文字も変えずコピー
 - messageは日本語
+- search_titleはアイテム名のみ（「柔軟剤を買った」→「柔軟剤」）
 ${modeHint ? `- ${modeHint}` : ""}`;
 
   const completion = await groq.chat.completions.create({

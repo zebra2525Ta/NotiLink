@@ -59,6 +59,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message });
     }
 
+    if (intent.intent === "update_purchased") {
+      // 買い物リストの既存アイテムを検索して購入済みをチェック
+      const pages = await queryDatabase(session.accessToken, intent.database_id);
+      const searchTitle = (intent.search_title ?? "").trim().toLowerCase();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const matched = (pages as any[]).find((p: any) =>
+        Object.values(p).some((v) =>
+          typeof v === "string" && v.trim().toLowerCase().includes(searchTitle)
+        )
+      );
+      if (!matched || !matched.__page_id) {
+        return NextResponse.json({ message: `「${intent.search_title}」が見つかりませんでした` });
+      }
+      const res = await fetch(`https://api.notion.com/v1/pages/${matched.__page_id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          "Notion-Version": "2022-06-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ properties: { 購入済み: { checkbox: true } } }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(JSON.stringify(err));
+      }
+      return NextResponse.json({ message: intent.message ?? `「${intent.search_title}」を購入済みにしました！` });
+    }
+
     // Phase 2 (register): 対象DBの既存データを取得してプロパティを生成
     const schema = schemas.find((s) => s.id === intent.database_id);
     if (!schema) {

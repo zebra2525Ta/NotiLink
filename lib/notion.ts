@@ -168,7 +168,7 @@ export async function queryDatabase(accessToken: string, databaseId: string): Pr
   }
 
   return response.results.map((page: any) => {
-    const row: Record<string, string> = {};
+    const row: Record<string, string> = { __page_id: page.id };
     for (const [key, prop] of Object.entries(page.properties as Record<string, any>)) {
       switch (prop.type) {
         case "title":
