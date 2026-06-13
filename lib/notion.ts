@@ -29,15 +29,22 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
       break;
     }
 
-    console.log("[notion] search results:", response.results.map(r => ({ id: r.id, object: r.object })));
-
     for (const result of response.results) {
-      if (result.object !== "database") continue;
+      // standalone DB と inline DB（object: "page"）両方を試す
+      const dbRes = await fetch(`https://api.notion.com/v1/databases/${result.id}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Notion-Version": "2022-06-28",
+        },
+      });
+      if (!dbRes.ok) continue;
 
-      const title = result.title?.[0]?.plain_text ?? "無題";
-      const properties = Object.entries(result.properties ?? {}).map(([name, prop]) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = await dbRes.json() as any;
+      const title = db.title?.[0]?.plain_text ?? "無題";
+      const properties = Object.entries(db.properties ?? {}).map(([name, prop]: [string, any]) => ({
         name,
-        type: prop.type,
+        type: prop.type as string,
       }));
       allDatabases.push({ id: result.id, title, properties });
     }
