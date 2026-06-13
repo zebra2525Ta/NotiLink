@@ -26,9 +26,14 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
       ...(cursor ? { start_cursor: cursor } : {}),
     }) as { results: NotionDbRaw[]; has_more: boolean; next_cursor: string | null };
 
+    if (!Array.isArray(response.results)) {
+      console.error("[notion] search unexpected response:", JSON.stringify(response));
+      break;
+    }
+
     for (const result of response.results) {
       const title = result.title?.[0]?.plain_text ?? "無題";
-      const properties = Object.entries(result.properties).map(([name, prop]) => ({
+      const properties = Object.entries(result.properties ?? {}).map(([name, prop]) => ({
         name,
         type: prop.type,
       }));
@@ -53,6 +58,11 @@ export async function queryDatabase(accessToken: string, databaseId: string): Pr
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response = await res.json() as any;
+
+  if (!Array.isArray(response.results)) {
+    console.error("[notion] query unexpected response:", JSON.stringify(response));
+    return [];
+  }
 
   return response.results.map((page: any) => {
     const row: Record<string, string> = {};
