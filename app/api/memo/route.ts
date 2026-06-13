@@ -3,6 +3,31 @@ import { detectIntent, generateProperties, generateQueryResponse, type Mode } fr
 import { searchDatabases, queryDatabase, saveToNotion } from "@/lib/notion";
 import { auth } from "@/auth";
 
+// Groqが返す英語キー → Notionプロパティ型
+const GROQ_KEY_TO_TYPE: Record<string, string> = {
+  title: "title", name: "title", item: "title", text: "title",
+  タイトル: "title", 商品名: "title", テキスト: "title", 名前: "title",
+  date: "date", time: "date", 日付: "date", 日時: "date",
+  memo: "rich_text", content: "rich_text", description: "rich_text",
+  quantity: "rich_text", amount: "rich_text",
+  メモ: "rich_text", 数量: "rich_text", 詳細: "rich_text",
+  done: "checkbox", completed: "checkbox", purchased: "checkbox",
+  購入済み: "checkbox",
+};
+
+function buildNotionValue(value: string, type: string): Record<string, unknown> | null {
+  if (!value) return null;
+  switch (type) {
+    case "title":    return { title: [{ text: { content: value } }] };
+    case "rich_text": return { rich_text: [{ text: { content: value } }] };
+    case "checkbox": return { checkbox: value === "true" };
+    case "date":     return { date: { start: value } };
+    case "select":   return { select: { name: value } };
+    case "number":   return { number: Number(value) };
+    default:         return { rich_text: [{ text: { content: value } }] };
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -40,16 +65,76 @@ export async function POST(req: NextRequest) {
     const examples = await queryDatabase(session.accessToken, intent.database_id);
     console.log("[memo] examples fetched:", examples.length);
 
-    const properties = await generateProperties(text, schema, examples, mode as Mode);
-    console.log("[memo] generated properties:", JSON.stringify(properties));
+    const groqProps = await generateProperties(text, schema, examples, mode as Mode);
+    console.log("[memo] groq props:", JSON.stringify(groqProps));
 
-    // 最後の砦: Groqが {} を返してもタイトルプロパティにユーザー入力を入れる
-    if (Object.keys(properties).length === 0) {
-      const titleProp = schema.properties.find((p) => p.type === "title");
-      if (titleProp) properties[titleProp.name] = text;
+    // スキーマをもとに直接Notionプロパティを組み立てる
+    const notionProperties: Record<string, unknown> = {};
+    const assigned = new Set<string>();
+
+    // typeごとのスキーマプロパティを逆引き
+    const typeToProps = new Map<string, typeof schema.properties>();
+    for (const p of schema.properties) {
+      typeToProps.set(p.type, [...(typeToProps.get(p.type) ?? []), p]);
     }
 
-    await saveToNotion([{ database_id: intent.database_id, properties }], session.accessToken, schemas);
+    for (const [groqKey, groqValue] of Object.entries(groqProps)) {
+      if (!groqValue || typeof groqValue !== "string") continue;
+      const keyLower = groqKey.trim().toLowerCase();
+
+      // ① 名前完全一致（case-insensitive）
+      const exact = schema.properties.find(
+        (p) => p.name.trim().toLowerCase() === keyLower
+      );
+      if (exact && !assigned.has(exact.name)) {
+        const v = buildNotionValue(groqValue, exact.type);
+        if (v) { notionProperties[exact.name] = v; assigned.add(exact.name); }
+        continue;
+      }
+
+      // ② 型ベースマッチ（"title" → type:title のスキーマ列へ）
+      const targetType = GROQ_KEY_TO_TYPE[keyLower];
+      if (targetType) {
+        const candidate = (typeToProps.get(targetType) ?? []).find((p) => !assigned.has(p.name));
+        if (candidate) {
+          const v = buildNotionValue(groqValue, candidate.type);
+          if (v) { notionProperties[candidate.name] = v; assigned.add(candidate.name); }
+          continue;
+        }
+      }
+
+      console.log("[memo] unmatched groq key:", groqKey, "val:", groqValue);
+    }
+
+    // 絶対保証: titleプロパティには必ず値を入れる
+    const titleProp = schema.properties.find((p) => p.type === "title");
+    if (titleProp && !assigned.has(titleProp.name)) {
+      const fallback =
+        Object.values(groqProps).find((v) => typeof v === "string" && v.trim()) ?? text;
+      notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+    }
+
+    console.log("[memo] final notionProperties:", JSON.stringify(notionProperties));
+
+    // Notion API 直接呼び出し
+    const res = await fetch("https://api.notion.com/v1/pages", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        parent: { database_id: intent.database_id },
+        properties: notionProperties,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("[memo] notion create failed:", JSON.stringify(err));
+      throw new Error(JSON.stringify(err));
+    }
 
     return NextResponse.json({ message: intent.message, count: 1 });
 
