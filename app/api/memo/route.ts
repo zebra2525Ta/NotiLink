@@ -21,7 +21,10 @@ function buildNotionValue(value: string, type: string): Record<string, unknown> 
     case "title":    return { title: [{ text: { content: value } }] };
     case "rich_text": return { rich_text: [{ text: { content: value } }] };
     case "checkbox": return { checkbox: value === "true" };
-    case "date":     return { date: { start: value } };
+    case "date": {
+      const [start, end] = value.split("~");
+      return end ? { date: { start: start.trim(), end: end.trim() } } : { date: { start: value.trim() } };
+    }
     case "select":   return { select: { name: value } };
     case "number":   return { number: Number(value) };
     default:         return { rich_text: [{ text: { content: value } }] };
