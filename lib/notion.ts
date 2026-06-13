@@ -43,16 +43,26 @@ async function findChildDatabases(accessToken: string, pageId: string, seen: Set
 
 async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema | null> {
   try {
-    const notion = new Client({ auth: accessToken });
-    const db = await notion.databases.retrieve({ database_id: id }) as unknown as {
-      title: Array<{ plain_text: string }>;
-      properties: Record<string, { type: string }>;
-    };
-    const title = db.title?.[0]?.plain_text ?? "無題";
-    const properties = Object.entries(db.properties ?? {}).map(([name, prop]) => ({
+    const res = await fetch(`https://api.notion.com/v1/databases/${id}`, {
+      headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
+    });
+    if (!res.ok) {
+      console.log("[notion] fetchDb HTTP failed:", id, res.status);
+      return null;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = await res.json() as any;
+    const title: string = db.title?.[0]?.plain_text ?? db.title?.[0]?.text?.content ?? "無題";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawProps: Record<string, any> = db.properties ?? {};
+    // ログ: 最初のプロパティの生の構造を確認
+    const firstKey = Object.keys(rawProps)[0];
+    if (firstKey) console.log("[notion] fetchDb first prop sample:", firstKey, JSON.stringify(rawProps[firstKey]));
+    const properties = Object.entries(rawProps).map(([name, prop]) => ({
       name,
-      type: prop.type,
+      type: (prop.type ?? prop.config?.type ?? "unknown") as string,
     }));
+    console.log("[notion] fetchDb schema:", id, title, JSON.stringify(properties));
     return { id, title, properties };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : JSON.stringify(err);
