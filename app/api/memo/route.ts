@@ -67,6 +67,8 @@ export async function POST(req: NextRequest) {
 
     const groqProps = await generateProperties(text, schema, examples, mode as Mode);
     console.log("[memo] groq props:", JSON.stringify(groqProps));
+    console.log("[memo] schema.properties:", JSON.stringify(schema.properties));
+    console.log("[memo] schema.title:", schema.title, "schema.id:", schema.id);
 
     // スキーマをもとに直接Notionプロパティを組み立てる
     const notionProperties: Record<string, unknown> = {};
@@ -108,10 +110,18 @@ export async function POST(req: NextRequest) {
 
     // 絶対保証: titleプロパティには必ず値を入れる
     const titleProp = schema.properties.find((p) => p.type === "title");
+    console.log("[memo] titleProp:", JSON.stringify(titleProp), "assigned:", JSON.stringify([...assigned]));
     if (titleProp && !assigned.has(titleProp.name)) {
       const fallback =
         Object.values(groqProps).find((v) => typeof v === "string" && v.trim()) ?? text;
       notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
+    }
+
+    // 核オプション: それでも空なら原文テキストを直接タイトルに
+    if (Object.keys(notionProperties).length === 0) {
+      console.log("[memo] NUCLEAR FALLBACK: setting title to raw text");
+      const key = titleProp?.name ?? "タイトル";
+      notionProperties[key] = { title: [{ text: { content: text } }] };
     }
 
     console.log("[memo] final notionProperties:", JSON.stringify(notionProperties));
