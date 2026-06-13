@@ -45,7 +45,11 @@ async function fetchDbSchema(accessToken: string, id: string): Promise<DbSchema 
   const res = await fetch(`https://api.notion.com/v1/databases/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.log("[notion] fetchDb failed:", id, res.status, JSON.stringify(err));
+    return null;
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = await res.json() as any;
   const title = db.title?.[0]?.plain_text ?? "無題";
