@@ -32,6 +32,15 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
     }
 
     for (const result of response.results) {
+      // アクセス権がないDBはスキップ
+      const checkRes = await fetch(`https://api.notion.com/v1/databases/${result.id}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Notion-Version": "2022-06-28",
+        },
+      });
+      if (!checkRes.ok) continue;
+
       const title = result.title?.[0]?.plain_text ?? "無題";
       const properties = Object.entries(result.properties ?? {}).map(([name, prop]) => ({
         name,
