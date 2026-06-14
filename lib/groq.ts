@@ -17,6 +17,7 @@ export interface IntentResult {
   message: string | null;
   search_title?: string; // update_purchased時: 検索するアイテム名
   content?: string;      // register時: 指示ワードを除いた純粋な登録内容
+  confidence: number;    // DB分類の確信度 0〜100
 }
 
 // ── Phase 1: どのDBか・登録か検索かを判断 ──────────────────────────────
@@ -39,18 +40,19 @@ ${dbList}
 ]
 
 【登録の場合】新しいデータを追加する（「〜買う」「〜予定」「〜行きたい」など）
-{"intent":"register","database_id":"最も適切なdatabase_idをそのままコピー","message":"秘書の一言（30文字以内）","content":"登録する内容のみ（「〜して」「〜登録」「〜メモ」などの指示表現を除いた純粋なコンテンツ）"}
+{"intent":"register","database_id":"最も適切なdatabase_idをそのままコピー","message":"秘書の一言（30文字以内）","content":"登録する内容のみ（「〜して」「〜登録」「〜メモ」などの指示表現を除いた純粋なコンテンツ）","confidence":85}
 
 【購入済み更新の場合】既存アイテムを買った・購入した・チェックしたいとき（「〜買った」「〜購入した」「〜ゲットした」など）
-{"intent":"update_purchased","database_id":"買い物リストのdatabase_id","search_title":"アイテム名のみ","message":"秘書の一言（30文字以内）"}
+{"intent":"update_purchased","database_id":"買い物リストのdatabase_id","search_title":"アイテム名のみ","message":"秘書の一言（30文字以内）","confidence":90}
 
 【検索・質問の場合】データベースの内容を知りたいとき（「〜教えて」「〜一覧」「〜は？」など）
-{"intent":"query","database_id":"最も関連するdatabase_idをそのままコピー","message":null}
+{"intent":"query","database_id":"最も関連するdatabase_idをそのままコピー","message":null,"confidence":80}
 
 ルール:
 - database_idは上記リストの値を1文字も変えずコピー
 - messageは日本語
 - search_titleはアイテム名のみ（「柔軟剤を買った」→「柔軟剤」）
+- confidenceはDB選択の確信度（0〜100の整数）。どのDBか明確なら80以上、曖昧なら60未満にすること
 - YYYY-MM-DD形式の日付や時刻が含まれる場合はスケジュール・予定・カレンダー系のDBを優先すること
 - 「〜買う」「〜欲しい」「〜必要」などの購買意図、または文章でない単体の商品名・食材名・日用品名のみの入力は買い物リスト系のDBを選ぶこと（例：「長いも」「牛乳」「洗剤」→買い物リスト）
 - 感想・体験・気づき・料理メモなど述語を含む文章（「〜うまい」「〜楽しかった」「〜だった」「〜してみた」など）はスケジュール・買い物・場所系以外のメモ・日記・未分類系DBを選ぶこと（例：「長芋すって醤油かけたらうまい」→メモ系）

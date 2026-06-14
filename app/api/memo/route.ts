@@ -152,8 +152,21 @@ export async function POST(req: NextRequest) {
     const intentText = (imageList.length > 0 && processedText !== text)
       ? `${text}\n\n（内容の概要：${processedText.slice(0, 400)}）`
       : text as string;
-    const intent = await detectIntent(intentText, schemas, mode as Mode);
+    let intent = await detectIntent(intentText, schemas, mode as Mode);
     console.log("[memo] intent:", JSON.stringify(intent));
+
+    // 確信度が低い場合は未分類DBへフォールバック
+    const CONFIDENCE_THRESHOLD = 60;
+    if (
+      intent.intent === "register" &&
+      (intent.confidence ?? 100) < CONFIDENCE_THRESHOLD
+    ) {
+      const fallback = schemas.find((s) => s.title.includes("未分類"));
+      if (fallback) {
+        console.log(`[memo] low confidence (${intent.confidence}), fallback → 未分類`);
+        intent = { ...intent, database_id: fallback.id };
+      }
+    }
 
     if (intent.intent === "query") {
       const schema = schemas.find((s) => s.id === intent.database_id);
