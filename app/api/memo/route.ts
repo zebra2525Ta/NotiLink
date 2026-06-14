@@ -13,6 +13,7 @@ const GROQ_KEY_TO_TYPE: Record<string, string> = {
   メモ: "rich_text", 数量: "rich_text", 詳細: "rich_text",
   done: "checkbox", completed: "checkbox", purchased: "checkbox",
   購入済み: "checkbox",
+  url: "url", link: "url", リンク: "url", Notionリンク: "url",
 };
 
 function buildNotionValue(value: string, type: string): Record<string, unknown> | null {
@@ -25,6 +26,7 @@ function buildNotionValue(value: string, type: string): Record<string, unknown> 
       const [start, end] = value.split("~");
       return end ? { date: { start: start.trim(), end: end.trim() } } : { date: { start: value.trim() } };
     }
+    case "url":      return { url: value };
     case "select":   return { select: { name: value } };
     case "number":   return { number: Number(value) };
     default:         return { rich_text: [{ text: { content: value } }] };
@@ -63,8 +65,22 @@ async function extractWithGemini(
 async function createNotionPage(
   accessToken: string,
   databaseId: string,
-  properties: Record<string, unknown>
+  properties: Record<string, unknown>,
+  bodyContent?: string
 ): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payload: Record<string, any> = { parent: { database_id: databaseId }, properties };
+  if (bodyContent?.trim()) {
+    payload.children = [
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: {
+          rich_text: [{ type: "text", text: { content: bodyContent.slice(0, 2000) } }],
+        },
+      },
+    ];
+  }
   const res = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
     headers: {
@@ -72,7 +88,7 @@ async function createNotionPage(
       "Notion-Version": "2022-06-28",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ parent: { database_id: databaseId }, properties }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const err = await res.json();
@@ -85,6 +101,7 @@ export interface PendingPage {
   database_id: string;
   properties: Record<string, unknown>;
   previewLabel: string;
+  bodyContent?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -100,8 +117,8 @@ export async function POST(req: NextRequest) {
     // ── 確認後の実際登録 ──────────────────────────────────────────
     if (body.confirm && Array.isArray(body.pendingPages)) {
       const pages = body.pendingPages as PendingPage[];
-      for (const { database_id, properties } of pages) {
-        await createNotionPage(session.accessToken, database_id, properties);
+      for (const { database_id, properties, bodyContent } of pages) {
+        await createNotionPage(session.accessToken, database_id, properties, bodyContent);
       }
       return NextResponse.json({ message: `${pages.length}件をNotionに登録しました！` });
     }
@@ -247,10 +264,15 @@ export async function POST(req: NextRequest) {
         : "";
       const previewLabel = [titleVal, dateDisplay].filter(Boolean).join("  |  ");
 
+      // rich_textフィールドのないDB（未分類など）はページ本文に全文を書き込む
+      const hasRichText = schema.properties.some((p) => p.type === "rich_text");
+      const bodyContent = !hasRichText ? processedText : undefined;
+
       pendingPages.push({
         database_id: intent.database_id,
         properties: notionProperties,
         previewLabel,
+        bodyContent,
       });
     }
 
