@@ -50,6 +50,8 @@ ${dbList}
 - database_idは上記リストの値を1文字も変えずコピー
 - messageは日本語
 - search_titleはアイテム名のみ（「柔軟剤を買った」→「柔軟剤」）
+- 入力内容にYYYY-MM-DD形式の日付や時刻が含まれる場合は、スケジュール・予定・カレンダー系のDBを優先して選ぶこと
+- 買うもの・欲しいものが含まれる場合は買い物リスト系のDBを優先すること
 ${modeHint ? `- ${modeHint}` : ""}`;
 
   const completion = await groq.chat.completions.create({

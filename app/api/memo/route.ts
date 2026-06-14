@@ -125,8 +125,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Notionにデータベースが見つかりません" }, { status: 400 });
     }
 
-    // Phase 1: intent 判定（元の指示文で判断、Gemini抽出テキストは使わない）
-    const intent = await detectIntent(text as string, schemas, mode as Mode);
+    // Phase 1: intent 判定
+    // 画像あり時はGemini抽出内容の冒頭もヒントとして渡し、DBを正しく選べるようにする
+    const intentText = (imageBase64 && processedText !== text)
+      ? `${text}\n\n（内容の概要：${processedText.slice(0, 400)}）`
+      : text as string;
+    const intent = await detectIntent(intentText, schemas, mode as Mode);
     console.log("[memo] intent:", JSON.stringify(intent));
 
     if (intent.intent === "query") {
