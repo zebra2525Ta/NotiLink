@@ -266,7 +266,10 @@ export async function POST(req: NextRequest) {
 
       // rich_textフィールドのないDB（未分類など）はページ本文に全文を書き込む
       const hasRichText = schema.properties.some((p) => p.type === "rich_text");
-      const bodyContent = !hasRichText ? processedText : undefined;
+      // 画像あり→Gemini抽出テキスト全文、テキストのみ→Groq抽出タイトル値（指示ワード除去済み）
+      const bodyContent = !hasRichText
+        ? (imageList.length > 0 ? processedText : titleVal) || undefined
+        : undefined;
 
       pendingPages.push({
         database_id: intent.database_id,
