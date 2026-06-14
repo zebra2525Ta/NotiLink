@@ -212,7 +212,15 @@ export async function generateQueryResponse(
   const pagesText =
     pages.length === 0
       ? "（データなし）"
-      : pages.map((p, i) => `${i + 1}. ${Object.values(p).filter(Boolean).join(" / ")}`).join("\n");
+      : pages.map((p, i) => {
+          const { __page_id: _id, __body, ...props } = p;
+          const propStr = Object.entries(props)
+            .filter(([, v]) => v)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(" / ");
+          const bodyStr = __body ? `\n   【本文】${__body}` : "";
+          return `${i + 1}. ${propStr}${bodyStr}`;
+        }).join("\n");
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
