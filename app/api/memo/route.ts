@@ -264,9 +264,12 @@ export async function POST(req: NextRequest) {
         : "";
       const previewLabel = [titleVal, dateDisplay].filter(Boolean).join("  |  ");
 
-      // rich_textフィールドのないDB（未分類など）はページ本文に元の入力テキストを書き込む
+      // rich_textフィールドのないDB（未分類など）はページ本文に書き込む
+      // intent.contentがあれば指示ワード除去済みの内容を、なければ元テキストを使う
       const hasRichText = schema.properties.some((p) => p.type === "rich_text");
-      const bodyContent = !hasRichText ? processedText : undefined;
+      const bodyContent = !hasRichText
+        ? (intent.content?.trim() || processedText)
+        : undefined;
 
       pendingPages.push({
         database_id: intent.database_id,

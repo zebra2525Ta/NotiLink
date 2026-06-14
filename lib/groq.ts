@@ -16,6 +16,7 @@ export interface IntentResult {
   database_id: string;
   message: string | null;
   search_title?: string; // update_purchased時: 検索するアイテム名
+  content?: string;      // register時: 指示ワードを除いた純粋な登録内容
 }
 
 // ── Phase 1: どのDBか・登録か検索かを判断 ──────────────────────────────
@@ -38,7 +39,7 @@ ${dbList}
 ]
 
 【登録の場合】新しいデータを追加する（「〜買う」「〜予定」「〜行きたい」など）
-{"intent":"register","database_id":"最も適切なdatabase_idをそのままコピー","message":"秘書の一言（30文字以内）"}
+{"intent":"register","database_id":"最も適切なdatabase_idをそのままコピー","message":"秘書の一言（30文字以内）","content":"登録する内容のみ（「〜して」「〜登録」「〜メモ」などの指示表現を除いた純粋なコンテンツ）"}
 
 【購入済み更新の場合】既存アイテムを買った・購入した・チェックしたいとき（「〜買った」「〜購入した」「〜ゲットした」など）
 {"intent":"update_purchased","database_id":"買い物リストのdatabase_id","search_title":"アイテム名のみ","message":"秘書の一言（30文字以内）"}
