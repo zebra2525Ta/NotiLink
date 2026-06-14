@@ -3,6 +3,16 @@ import { detectIntent, generateProperties, generateQueryResponse, type Mode } fr
 import { searchDatabases, queryDatabase } from "@/lib/notion";
 import { auth } from "@/auth";
 
+// 末尾の指示行を除去（「〜として登録」「メモして」など）
+function stripInstructionSuffix(text: string): string {
+  const lines = text.trim().split('\n');
+  const last = lines[lines.length - 1].trim();
+  if (last.length <= 25 && /として登録|メモして|登録して|追加して|記録して|メモ$|登録$/.test(last)) {
+    return lines.slice(0, -1).join('\n').trim();
+  }
+  return text.trim();
+}
+
 // Groqが返す英語キー → Notionプロパティ型
 const GROQ_KEY_TO_TYPE: Record<string, string> = {
   title: "title", name: "title", item: "title", text: "title",
@@ -278,10 +288,10 @@ export async function POST(req: NextRequest) {
       const previewLabel = [titleVal, dateDisplay].filter(Boolean).join("  |  ");
 
       // rich_textフィールドのないDB（未分類など）はページ本文に書き込む
-      // intent.contentがあれば指示ワード除去済みの内容を、なければ元テキストを使う
+      // 末尾の指示行を除去した元テキストをそのまま使う（Groqのcontentは要約されるため使わない）
       const hasRichText = schema.properties.some((p) => p.type === "rich_text");
       const bodyContent = !hasRichText
-        ? (intent.content?.trim() || processedText)
+        ? stripInstructionSuffix(processedText)
         : undefined;
 
       pendingPages.push({
