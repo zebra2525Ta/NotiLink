@@ -66,7 +66,6 @@ export default function Home() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={s.icon} alt={s.label} className="w-12 h-12 rounded-xl object-cover" />
-                <span className="text-xs text-gray-300 text-center leading-tight">{s.label}</span>
               </button>
             ))}
           </div>
