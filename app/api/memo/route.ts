@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
 
     // Phase 1: intent 判定
     // 画像あり時はGemini抽出内容の冒頭もヒントとして渡し、DBを正しく選べるようにする
-    const intentText = (imageBase64 && processedText !== text)
+    const intentText = (imageList.length > 0 && processedText !== text)
       ? `${text}\n\n（内容の概要：${processedText.slice(0, 400)}）`
       : text as string;
     const intent = await detectIntent(intentText, schemas, mode as Mode);
