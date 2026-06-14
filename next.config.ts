@@ -8,5 +8,9 @@ const nextConfig: NextConfig = {
 export default withPWA({
   dest: "public",
   register: true,
+  reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
+  workboxOptions: {
+    disableDevLogs: true,
+  },
 })(nextConfig);

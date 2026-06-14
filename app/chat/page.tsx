@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { Mode } from "@/lib/groq";
+import { enqueue, getPending, removeById } from "@/lib/offlineQueue";
 
 const MODES: { value: Mode; label: string }[] = [
   { value: "normal", label: "通常" },
@@ -16,8 +17,58 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("normal");
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sendMemo = useCallback(async (text: string, modeVal: Mode): Promise<string> => {
+    const res = await fetch("/api/memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, mode: modeVal }),
+    });
+    const data = await res.json();
+    return data.message as string;
+  }, []);
+
+  const drainQueue = useCallback(async () => {
+    const items = await getPending();
+    if (items.length === 0) return;
+    for (const item of items) {
+      try {
+        await sendMemo(item.text, item.mode as Mode);
+        await removeById(item.id!);
+      } catch {
+        break;
+      }
+    }
+    const remaining = await getPending();
+    setPendingCount(remaining.length);
+    if (remaining.length === 0) {
+      setReply("オフライン中のメモを送信しました！");
+    }
+  }, [sendMemo]);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+
+    const onOnline = () => {
+      setIsOnline(true);
+      drainQueue();
+    };
+    const onOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+
+    getPending().then((items) => setPendingCount(items.length));
+
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [drainQueue]);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -30,14 +81,20 @@ export default function Chat() {
     setLoading(true);
     setReply(null);
 
+    if (!navigator.onLine) {
+      await enqueue({ text: input, mode, timestamp: Date.now() });
+      const items = await getPending();
+      setPendingCount(items.length);
+      setReply("オフラインのため一時保存しました。オンライン復帰後に自動送信されます。");
+      setInput("");
+      setLoading(false);
+      textareaRef.current?.focus();
+      return;
+    }
+
     try {
-      const res = await fetch("/api/memo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: input, mode }),
-      });
-      const data = await res.json();
-      setReply(data.message);
+      const message = await sendMemo(input, mode);
+      setReply(message);
       setInput("");
     } catch {
       setReply("通信エラーが発生しました。もう一度試してください。");
@@ -91,7 +148,12 @@ export default function Chat() {
         <Link href="/" className="text-gray-400 hover:text-white transition-colors text-lg">
           ←
         </Link>
-        <span className="text-base font-semibold tracking-wide">AI秘書</span>
+        <div className="flex flex-col items-center">
+          <span className="text-base font-semibold tracking-wide">AI秘書</span>
+          {!isOnline && (
+            <span className="text-xs text-amber-400">オフライン{pendingCount > 0 ? `（${pendingCount}件待機中）` : ""}</span>
+          )}
+        </div>
         <div className="flex gap-1">
           {MODES.map((m) => (
             <button
@@ -164,7 +226,7 @@ export default function Chat() {
           disabled={loading || ocrLoading || !input.trim()}
           className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-colors shrink-0"
         >
-          送信
+          {isOnline ? "送信" : "保存"}
         </button>
       </form>
     </main>
