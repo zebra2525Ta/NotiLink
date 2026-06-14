@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const SHORTCUTS = [
-  { label: "Notion", scheme: "notion://", fallback: "https://notion.so", icon: "N" },
-  { label: "カレンダー", scheme: "notion://", fallback: "https://calendar.notion.so", icon: "📅" },
-  { label: "SmartNews", scheme: "smartnews://", fallback: "https://smartnews.com", icon: "📰" },
-  { label: "SBI証券", scheme: "sbisec://", fallback: "https://www.sbisec.co.jp", icon: "📈" },
+  { label: "Notion", scheme: "notion://", fallback: "https://notion.so", icon: "/notion.png" },
+  { label: "カレンダー", scheme: "notion://", fallback: "https://calendar.notion.so", icon: "/notioncare.webp" },
+  { label: "SmartNews", scheme: "smartnews://", fallback: "https://smartnews.com", icon: "/smartnews.png" },
+  { label: "SBI証券", scheme: "sbisec://", fallback: "https://www.sbisec.co.jp", icon: "/sbi.webp" },
 ];
 
 function openApp(scheme: string, fallback: string) {
@@ -64,7 +64,8 @@ export default function Home() {
                 onClick={() => openApp(s.scheme, s.fallback)}
                 className="flex flex-col items-center gap-2 p-3 bg-gray-800 rounded-2xl hover:bg-gray-700 transition-colors active:scale-95"
               >
-                <span className="text-2xl">{s.icon}</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.icon} alt={s.label} className="w-12 h-12 rounded-xl object-cover" />
                 <span className="text-xs text-gray-300 text-center leading-tight">{s.label}</span>
               </button>
             ))}
