@@ -37,22 +37,23 @@ function formatDateForDisplay(isoStr: string): string {
   return time ? `${date} ${time}` : date;
 }
 
-async function extractWithGemini(imageBase64: string, mimeType: string, instruction: string): Promise<string> {
+async function extractWithGemini(
+  imageList: { base64: string; mimeType: string }[],
+  instruction: string
+): Promise<string> {
+  const prompt = `${instruction}\n\n抽出結果は以下の形式で1件1行で返してください。「休」の日は除外してください。\n形式：[タイトル] [YYYY-MM-DD] [開始時間]-[終了時間]\n\nタイトルの決め方：\n- 具体的な活動名があればそれを使う（例：映画、海、歯医者、友達とランチ）\n- シフト表・勤務スケジュールなら「バイト」または「仕事」\n- 特定の活動名がなければ大きなくくりで（遊び、仕事、バイト など）\n\n例：\n映画 2026-07-01 13:00-16:00\nバイト 2026-07-02 17:00-22:00\n海 2026-07-04 10:00-18:00`;
+
+  const parts = [
+    { text: prompt },
+    ...imageList.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.base64 } })),
+  ];
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              text: `${instruction}\n\n抽出結果は以下の形式で1件1行で返してください。「休」の日は除外してください。\n形式：[タイトル] [YYYY-MM-DD] [開始時間]-[終了時間]\n\nタイトルの決め方：\n- 具体的な活動名があればそれを使う（例：映画、海、歯医者、友達とランチ）\n- シフト表・勤務スケジュールなら「バイト」または「仕事」\n- 特定の活動名がなければ大きなくくりで（遊び、仕事、バイト など）\n\n例：\n映画 2026-07-01 13:00-16:00\nバイト 2026-07-02 17:00-22:00\n海 2026-07-04 10:00-18:00`,
-            },
-            { inline_data: { mime_type: mimeType, data: imageBase64 } },
-          ],
-        }],
-      }),
+      body: JSON.stringify({ contents: [{ parts }] }),
     }
   );
   const data = await res.json();
@@ -106,16 +107,20 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 通常処理 ─────────────────────────────────────────────────
-    const { text, imageBase64, mimeType } = body;
+    const { text, images, imageBase64, mimeType } = body;
     if (!text?.trim()) {
       return NextResponse.json({ message: "テキストが空です" }, { status: 400 });
     }
 
-    // 画像添付あり → Gemini で指示付き抽出
+    // 画像添付あり → Gemini で指示付き抽出（複数画像対応）
     let processedText = text as string;
-    if (imageBase64 && mimeType) {
-      console.log("[memo] image attached, calling Gemini:", text);
-      const extracted = await extractWithGemini(imageBase64 as string, mimeType as string, text as string);
+    const imageList: { base64: string; mimeType: string }[] =
+      Array.isArray(images) ? images :
+      (imageBase64 && mimeType) ? [{ base64: imageBase64, mimeType }] : [];
+
+    if (imageList.length > 0) {
+      console.log("[memo] images attached:", imageList.length, "calling Gemini:", text);
+      const extracted = await extractWithGemini(imageList, text as string);
       console.log("[memo] Gemini extracted:", extracted);
       processedText = extracted || text;
     }

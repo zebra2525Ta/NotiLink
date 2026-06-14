@@ -28,7 +28,7 @@ export default function Chat() {
   const [reply, setReply] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("normal");
-  const [imageData, setImageData] = useState<ImageData | null>(null);
+  const [images, setImages] = useState<ImageData[]>([]);
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
@@ -68,9 +68,15 @@ export default function Chat() {
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
+  // プレビューURLのメモリ解放
   useEffect(() => {
-    return () => { if (imageData?.previewUrl) URL.revokeObjectURL(imageData.previewUrl); };
-  }, [imageData]);
+    return () => { images.forEach((img) => URL.revokeObjectURL(img.previewUrl)); };
+  }, [images]);
+
+  function clearImages() {
+    images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+    setImages([]);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,15 +90,18 @@ export default function Chat() {
       setPendingCount(items.length);
       setReply("オフラインのため一時保存しました。オンライン復帰後に自動送信されます。");
       setInput("");
-      setImageData(null);
+      clearImages();
       setLoading(false);
       textareaRef.current?.focus();
       return;
     }
 
     try {
-      const body: Record<string, string> = { text: input, mode };
-      if (imageData) { body.imageBase64 = imageData.base64; body.mimeType = imageData.mimeType; }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: Record<string, any> = { text: input, mode };
+      if (images.length > 0) {
+        body.images = images.map(({ base64, mimeType }) => ({ base64, mimeType }));
+      }
 
       const res = await fetch("/api/memo", {
         method: "POST",
@@ -102,14 +111,13 @@ export default function Chat() {
       const data = await res.json();
 
       if (data.preview && data.pendingPages) {
-        // 確認ステップへ
         setConfirmState({ pendingPages: data.pendingPages, dbTitle: data.dbTitle });
         setInput("");
-        setImageData(null);
+        clearImages();
       } else {
         setReply(data.message);
         setInput("");
-        setImageData(null);
+        clearImages();
       }
     } catch {
       setReply("通信エラーが発生しました。もう一度試してください。");
@@ -153,23 +161,32 @@ export default function Chat() {
   }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    setImageData({ base64, mimeType: file.type, previewUrl });
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    const newImages = await Promise.all(
+      files.map(async (file) => {
+        const previewUrl = URL.createObjectURL(file);
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        return { base64, mimeType: file.type, previewUrl };
+      })
+    );
+
+    setImages((prev) => [...prev, ...newImages].slice(0, 5)); // 最大5枚
     if (fileInputRef.current) fileInputRef.current.value = "";
     textareaRef.current?.focus();
   }
 
-  function removeImage() {
-    if (imageData?.previewUrl) URL.revokeObjectURL(imageData.previewUrl);
-    setImageData(null);
+  function removeImage(index: number) {
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   // ── 確認UI ─────────────────────────────────────────────────────
@@ -183,7 +200,7 @@ export default function Chat() {
                 style={{ animationDelay: `${i * 0.15}s` }} />
             ))}
           </div>
-          {imageData && <p className="text-xs text-gray-500">画像を解析中...</p>}
+          {images.length > 0 && <p className="text-xs text-gray-500">画像を解析中...</p>}
         </div>
       );
     }
@@ -211,16 +228,12 @@ export default function Chat() {
             </div>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={handleConfirm}
-              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-medium transition-colors"
-            >
+            <button onClick={handleConfirm}
+              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-medium transition-colors">
               登録する
             </button>
-            <button
-              onClick={handleCancel}
-              className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-sm font-medium transition-colors"
-            >
+            <button onClick={handleCancel}
+              className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-sm font-medium transition-colors">
               キャンセル
             </button>
           </div>
@@ -268,36 +281,40 @@ export default function Chat() {
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-800 flex flex-col gap-2">
-        {imageData && (
-          <div className="flex items-center gap-3 px-1">
-            <div className="relative w-14 h-14 shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageData.previewUrl} alt="添付画像"
-                className="w-14 h-14 object-cover rounded-xl border border-gray-700" />
-              <button type="button" onClick={removeImage}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-600 hover:bg-gray-500 rounded-full text-xs flex items-center justify-center transition-colors">
-                ✕
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              画像を添付中。<br />指示を入力して送信してください。<br />例：「井上のシフトだけ登録して」
+        {/* 画像プレビュー（複数） */}
+        {images.length > 0 && (
+          <div className="flex items-center gap-2 px-1 flex-wrap">
+            {images.map((img, i) => (
+              <div key={i} className="relative w-14 h-14 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.previewUrl} alt={`添付画像${i + 1}`}
+                  className="w-14 h-14 object-cover rounded-xl border border-gray-700" />
+                <button type="button" onClick={() => removeImage(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-600 hover:bg-gray-500 rounded-full text-xs flex items-center justify-center transition-colors">
+                  ✕
+                </button>
+              </div>
+            ))}
+            <p className="text-xs text-gray-400 leading-relaxed ml-1">
+              指示を入力して送信<br />
+              <span className="text-gray-600">最大5枚</span>
             </p>
           </div>
         )}
 
         <div className="flex gap-3 items-end">
-          <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
+          <input ref={fileInputRef} type="file" accept="image/*" multiple
             className="hidden" onChange={handleImageChange} />
           <button type="button" onClick={() => fileInputRef.current?.click()}
-            disabled={loading || !!confirmState}
+            disabled={loading || !!confirmState || images.length >= 5}
             className={`p-3 rounded-xl transition-colors shrink-0 ${
-              imageData ? "bg-indigo-900 text-indigo-300" : "bg-gray-800 hover:bg-gray-700 disabled:opacity-50"
+              images.length > 0 ? "bg-indigo-900 text-indigo-300" : "bg-gray-800 hover:bg-gray-700 disabled:opacity-50"
             }`}>
             📷
           </button>
           <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={imageData ? "指示を入力（例：田中のシフトだけ登録して）" : "殴り書きOK（Enter で送信）"}
+            placeholder={images.length > 0 ? "指示を入力（例：田中のシフトだけ登録して）" : "殴り書きOK（Enter で送信）"}
             rows={2}
             disabled={!!confirmState}
             className="flex-1 bg-gray-800 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-600 leading-relaxed disabled:opacity-50" />
