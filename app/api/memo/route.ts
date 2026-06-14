@@ -41,7 +41,7 @@ async function extractWithGemini(imageBase64: string, mimeType: string, instruct
         contents: [{
           parts: [
             {
-              text: `${instruction}\n\n抽出結果は「日付 開始時間-終了時間 内容」の形式で1件1行で返してください。「休」の日は除外してください。`,
+              text: `${instruction}\n\n抽出結果は以下の形式で1件1行で返してください。「休」の日は除外してください。\n形式：[イベント名または活動名] [YYYY-MM-DD] [開始時間]-[終了時間]\n例：バイト 2026-07-01 09:00-18:00\nシフト表の場合はイベント名を「バイト」にしてください。それ以外は画像から読み取った活動名を使用してください。`,
             },
             { inline_data: { mime_type: mimeType, data: imageBase64 } },
           ],
