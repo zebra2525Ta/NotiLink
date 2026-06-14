@@ -149,7 +149,24 @@ export async function searchDatabases(accessToken: string): Promise<DbSchema[]> 
   return allDatabases;
 }
 
-export async function queryDatabase(accessToken: string, databaseId: string): Promise<Record<string, string>[]> {
+async function fetchPageBodyText(accessToken: string, pageId: string): Promise<string> {
+  const res = await fetch(`https://api.notion.com/v1/blocks/${pageId}/children?page_size=10`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "Notion-Version": "2022-06-28" },
+  });
+  if (!res.ok) return "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = await res.json() as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data.results ?? []).flatMap((b: any) =>
+    (b[b.type]?.rich_text ?? []).map((t: any) => t.plain_text)
+  ).join("").slice(0, 500);
+}
+
+export async function queryDatabase(
+  accessToken: string,
+  databaseId: string,
+  includeBody = false
+): Promise<Record<string, string>[]> {
   const res = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
     method: "POST",
     headers: {
@@ -167,7 +184,7 @@ export async function queryDatabase(accessToken: string, databaseId: string): Pr
     return [];
   }
 
-  return response.results.map((page: any) => {
+  const rows = response.results.map((page: any) => {
     const row: Record<string, string> = { __page_id: page.id };
     for (const [key, prop] of Object.entries(page.properties as Record<string, any>)) {
       switch (prop.type) {
@@ -195,6 +212,15 @@ export async function queryDatabase(accessToken: string, databaseId: string): Pr
     }
     return row;
   });
+
+  if (includeBody) {
+    await Promise.all(rows.map(async (row) => {
+      const body = await fetchPageBodyText(accessToken, row.__page_id);
+      if (body) row["__body"] = body;
+    }));
+  }
+
+  return rows;
 }
 
 function formatProperty(value: string, type: string): Record<string, unknown> | null {

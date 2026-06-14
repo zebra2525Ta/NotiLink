@@ -180,7 +180,9 @@ export async function POST(req: NextRequest) {
 
     if (intent.intent === "query") {
       const schema = schemas.find((s) => s.id === intent.database_id);
-      const pages = await queryDatabase(session.accessToken, intent.database_id);
+      // rich_textフィールドのないDB（未分類など）はページ本文も取得してGroqに渡す
+      const needsBody = !schema?.properties.some((p) => p.type === "rich_text");
+      const pages = await queryDatabase(session.accessToken, intent.database_id, needsBody);
       const message = await generateQueryResponse(text as string, schema?.title ?? "DB", pages, mode as Mode);
       return NextResponse.json({ message });
     }
