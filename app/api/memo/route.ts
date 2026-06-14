@@ -125,14 +125,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Notionにデータベースが見つかりません" }, { status: 400 });
     }
 
-    // Phase 1: intent 判定
-    const intent = await detectIntent(processedText, schemas, mode as Mode);
+    // Phase 1: intent 判定（元の指示文で判断、Gemini抽出テキストは使わない）
+    const intent = await detectIntent(text as string, schemas, mode as Mode);
     console.log("[memo] intent:", JSON.stringify(intent));
 
     if (intent.intent === "query") {
       const schema = schemas.find((s) => s.id === intent.database_id);
       const pages = await queryDatabase(session.accessToken, intent.database_id);
-      const message = await generateQueryResponse(processedText, schema?.title ?? "DB", pages, mode as Mode);
+      const message = await generateQueryResponse(text as string, schema?.title ?? "DB", pages, mode as Mode);
       return NextResponse.json({ message });
     }
 
