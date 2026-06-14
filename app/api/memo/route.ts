@@ -31,6 +31,28 @@ function buildNotionValue(value: string, type: string): Record<string, unknown> 
   }
 }
 
+async function extractWithGemini(imageBase64: string, mimeType: string, instruction: string): Promise<string> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              text: `${instruction}\n\n抽出結果は「日付 開始時間-終了時間 内容」の形式で1件1行で返してください。「休」の日は除外してください。`,
+            },
+            { inline_data: { mime_type: mimeType, data: imageBase64 } },
+          ],
+        }],
+      }),
+    }
+  );
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -38,9 +60,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "ログインが必要です" }, { status: 401 });
     }
 
-    const { text, mode } = await req.json();
+    const { text, mode, imageBase64, mimeType } = await req.json();
     if (!text?.trim()) {
       return NextResponse.json({ message: "テキストが空です" }, { status: 400 });
+    }
+
+    // 画像添付あり → Gemini で指示付き抽出してからGroqに渡す
+    let processedText = text as string;
+    if (imageBase64 && mimeType) {
+      console.log("[memo] image attached, calling Gemini:", text);
+      const extracted = await extractWithGemini(imageBase64 as string, mimeType as string, text as string);
+      console.log("[memo] Gemini extracted:", extracted);
+      processedText = extracted || text;
     }
 
     const schemas = await searchDatabases(session.accessToken);
@@ -49,13 +80,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Phase 1: 登録 or 検索か、どのDBかを判断
-    const intent = await detectIntent(text, schemas, mode as Mode);
+    const intent = await detectIntent(processedText, schemas, mode as Mode);
     console.log("[memo] intent:", JSON.stringify(intent));
 
     if (intent.intent === "query") {
       const schema = schemas.find((s) => s.id === intent.database_id);
       const pages = await queryDatabase(session.accessToken, intent.database_id);
-      const message = await generateQueryResponse(text, schema?.title ?? "DB", pages, mode as Mode);
+      const message = await generateQueryResponse(processedText, schema?.title ?? "DB", pages, mode as Mode);
       return NextResponse.json({ message });
     }
 
@@ -97,7 +128,7 @@ export async function POST(req: NextRequest) {
     const examples = await queryDatabase(session.accessToken, intent.database_id);
     console.log("[memo] examples fetched:", examples.length);
 
-    const groqItemList = await generateProperties(text, schema, examples, mode as Mode);
+    const groqItemList = await generateProperties(processedText, schema, examples, mode as Mode);
     console.log("[memo] groq items:", JSON.stringify(groqItemList));
 
     const titleProp = schema.properties.find((p) => p.type === "title");
