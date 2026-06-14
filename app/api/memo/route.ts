@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { detectIntent, generateProperties, generateQueryResponse, type Mode } from "@/lib/groq";
-import { searchDatabases, queryDatabase, saveToNotion } from "@/lib/notion";
+import { searchDatabases, queryDatabase } from "@/lib/notion";
 import { auth } from "@/auth";
 
 // Groqが返す英語キー → Notionプロパティ型
@@ -31,6 +31,12 @@ function buildNotionValue(value: string, type: string): Record<string, unknown> 
   }
 }
 
+function formatDateForDisplay(isoStr: string): string {
+  const date = isoStr.split("T")[0];
+  const time = isoStr.includes("T") ? isoStr.split("T")[1].slice(0, 5) : null;
+  return time ? `${date} ${time}` : date;
+}
+
 async function extractWithGemini(imageBase64: string, mimeType: string, instruction: string): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -53,6 +59,33 @@ async function extractWithGemini(imageBase64: string, mimeType: string, instruct
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
+async function createNotionPage(
+  accessToken: string,
+  databaseId: string,
+  properties: Record<string, unknown>
+): Promise<void> {
+  const res = await fetch("https://api.notion.com/v1/pages", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ parent: { database_id: databaseId }, properties }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    console.error("[memo] notion create failed:", JSON.stringify(err));
+    throw new Error(JSON.stringify(err));
+  }
+}
+
+export interface PendingPage {
+  database_id: string;
+  properties: Record<string, unknown>;
+  previewLabel: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -60,12 +93,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "ログインが必要です" }, { status: 401 });
     }
 
-    const { text, mode, imageBase64, mimeType } = await req.json();
+    const body = await req.json();
+    const { mode } = body;
+
+    // ── 確認後の実際登録 ──────────────────────────────────────────
+    if (body.confirm && Array.isArray(body.pendingPages)) {
+      const pages = body.pendingPages as PendingPage[];
+      for (const { database_id, properties } of pages) {
+        await createNotionPage(session.accessToken, database_id, properties);
+      }
+      return NextResponse.json({ message: `${pages.length}件をNotionに登録しました！` });
+    }
+
+    // ── 通常処理 ─────────────────────────────────────────────────
+    const { text, imageBase64, mimeType } = body;
     if (!text?.trim()) {
       return NextResponse.json({ message: "テキストが空です" }, { status: 400 });
     }
 
-    // 画像添付あり → Gemini で指示付き抽出してからGroqに渡す
+    // 画像添付あり → Gemini で指示付き抽出
     let processedText = text as string;
     if (imageBase64 && mimeType) {
       console.log("[memo] image attached, calling Gemini:", text);
@@ -79,7 +125,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Notionにデータベースが見つかりません" }, { status: 400 });
     }
 
-    // Phase 1: 登録 or 検索か、どのDBかを判断
+    // Phase 1: intent 判定
     const intent = await detectIntent(processedText, schemas, mode as Mode);
     console.log("[memo] intent:", JSON.stringify(intent));
 
@@ -91,7 +137,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (intent.intent === "update_purchased") {
-      // 買い物リストの既存アイテムを検索して購入済みをチェック
       const pages = await queryDatabase(session.accessToken, intent.database_id);
       const searchTitle = (intent.search_title ?? "").trim().toLowerCase();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,32 +157,29 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({ properties: { 購入済み: { checkbox: true } } }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(JSON.stringify(err));
-      }
+      if (!res.ok) throw new Error(JSON.stringify(await res.json()));
       return NextResponse.json({ message: intent.message ?? `「${intent.search_title}」を購入済みにしました！` });
     }
 
-    // Phase 2 (register): 対象DBの既存データを取得してプロパティを生成
+    // Phase 2 (register): プロパティ生成
     const schema = schemas.find((s) => s.id === intent.database_id);
     if (!schema) {
       return NextResponse.json({ message: "対象データベースが見つかりません" }, { status: 400 });
     }
 
     const examples = await queryDatabase(session.accessToken, intent.database_id);
-    console.log("[memo] examples fetched:", examples.length);
-
     const groqItemList = await generateProperties(processedText, schema, examples, mode as Mode);
     console.log("[memo] groq items:", JSON.stringify(groqItemList));
 
     const titleProp = schema.properties.find((p) => p.type === "title");
+    const dateProp = schema.properties.find((p) => p.type === "date");
     const typeToProps = new Map<string, typeof schema.properties>();
     for (const p of schema.properties) {
       typeToProps.set(p.type, [...(typeToProps.get(p.type) ?? []), p]);
     }
 
-    let createdCount = 0;
+    const pendingPages: PendingPage[] = [];
+
     for (const groqProps of groqItemList) {
       const notionProperties: Record<string, unknown> = {};
       const assigned = new Set<string>();
@@ -166,7 +208,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // titleが未設定なら確実に埋める
+      // titleが未設定なら埋める
       if (titleProp && !assigned.has(titleProp.name)) {
         const fallback = Object.values(groqProps).find((v) => typeof v === "string" && v.trim()) ?? text;
         notionProperties[titleProp.name] = { title: [{ text: { content: fallback } }] };
@@ -176,30 +218,39 @@ export async function POST(req: NextRequest) {
         notionProperties[key] = { title: [{ text: { content: text } }] };
       }
 
-      console.log("[memo] creating page:", JSON.stringify(notionProperties));
+      // プレビュー用ラベル生成
+      const titleVal = titleProp
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? ((notionProperties[titleProp.name] as any)?.title?.[0]?.text?.content ?? "")
+        : "";
+      const dateStart = dateProp
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? ((notionProperties[dateProp.name] as any)?.date?.start ?? "")
+        : "";
+      const dateEnd = dateProp
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? ((notionProperties[dateProp.name] as any)?.date?.end ?? "")
+        : "";
+      const dateDisplay = dateStart
+        ? dateEnd
+          ? `${formatDateForDisplay(dateStart)} 〜 ${formatDateForDisplay(dateEnd)}`
+          : formatDateForDisplay(dateStart)
+        : "";
+      const previewLabel = [titleVal, dateDisplay].filter(Boolean).join("  |  ");
 
-      const res = await fetch("https://api.notion.com/v1/pages", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-          "Notion-Version": "2022-06-28",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          parent: { database_id: intent.database_id },
-          properties: notionProperties,
-        }),
+      pendingPages.push({
+        database_id: intent.database_id,
+        properties: notionProperties,
+        previewLabel,
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        console.error("[memo] notion create failed:", JSON.stringify(err));
-        throw new Error(JSON.stringify(err));
-      }
-      createdCount++;
     }
 
-    return NextResponse.json({ message: intent.message, count: createdCount });
+    // 確認画面用にプレビューを返す
+    return NextResponse.json({
+      preview: true,
+      pendingPages,
+      dbTitle: schema.title,
+    });
 
   } catch (error) {
     console.error("[memo]", error);
