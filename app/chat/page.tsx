@@ -191,18 +191,24 @@ export default function Chat() {
     if (confirmState) {
       return (
         <div className="max-w-sm w-full flex flex-col gap-4">
-          <div className="bg-gray-800 rounded-2xl px-5 py-4">
-            <p className="text-xs text-gray-400 mb-3">
-              「{confirmState.dbTitle}」に以下の内容を登録します
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-gray-400 px-1">
+              「{confirmState.dbTitle}」に{confirmState.pendingPages.length}件登録します
             </p>
-            <ul className="flex flex-col gap-2">
-              {confirmState.pendingPages.map((p, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-100">
-                  <span className="text-indigo-400 shrink-0">•</span>
-                  <span className="leading-snug">{p.previewLabel}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="max-h-64 overflow-y-auto flex flex-col gap-2 pr-1">
+              {confirmState.pendingPages.map((p, i) => {
+                const [title, date] = p.previewLabel.split("  |  ");
+                return (
+                  <div key={i} className="flex items-center gap-3 bg-gray-800 rounded-2xl px-4 py-3">
+                    <div className="w-1 shrink-0 self-stretch bg-indigo-500 rounded-full" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{title}</p>
+                      {date && <p className="text-xs text-gray-400 mt-0.5">{date}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           <div className="flex gap-3">
             <button
