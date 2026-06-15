@@ -26,7 +26,7 @@ export default function Login() {
     >
       <div className="flex flex-col items-center gap-8 w-full max-w-xs">
         <div className="flex flex-col items-center gap-3">
-          <NotiLinkLogo size={72} />
+          <NotiLinkLogo size={72} bg="#100E0A" />
           <h1
             className="text-2xl font-bold tracking-[0.15em] mt-2"
             style={{ color: "#FCD34D" }}

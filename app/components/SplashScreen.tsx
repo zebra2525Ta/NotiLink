@@ -18,7 +18,7 @@ export default function SplashScreen() {
       className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5"
       style={{ backgroundColor: "#190E00" }}
     >
-      <NotiLinkLogo size={90} />
+      <NotiLinkLogo size={90} bg="#190E00" />
       <p
         className="text-lg font-bold tracking-[0.3em]"
         style={{ color: "#FCD34D" }}
