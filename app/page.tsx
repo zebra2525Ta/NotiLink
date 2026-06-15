@@ -50,7 +50,7 @@ export default function Home() {
   return (
     <main className="flex flex-col min-h-screen bg-gray-950 text-white">
       <header className="flex items-center px-5 py-4 border-b border-gray-800">
-        <span className="text-base font-semibold tracking-wide">AI秘書</span>
+        <span className="text-base font-semibold tracking-wide">NotiLink</span>
       </header>
 
       <div className="flex-1 flex flex-col gap-5 p-5 overflow-y-auto pb-24">
