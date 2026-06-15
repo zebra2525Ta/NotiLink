@@ -22,6 +22,7 @@ type Weather = {
   tempMax: number;
   tempMin: number;
   humidity: number;
+  pressure: number;
   icon: string;
 };
 
@@ -89,6 +90,7 @@ export default function Home() {
                 <div className="text-right text-xs text-gray-400 space-y-1">
                   <p>最高 {weather.tempMax}° / 最低 {weather.tempMin}°</p>
                   <p>湿度 {weather.humidity}%</p>
+                  <p>気圧 {weather.pressure}hPa</p>
                 </div>
               </div>
             ) : (

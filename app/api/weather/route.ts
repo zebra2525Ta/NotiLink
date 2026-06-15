@@ -24,6 +24,7 @@ export async function GET() {
       tempMax: Math.round(data.main.temp_max),
       tempMin: Math.round(data.main.temp_min),
       humidity: data.main.humidity,
+      pressure: data.main.pressure,
       icon: ICONS[iconKey] ?? "🌡️",
     });
   } catch (error) {
