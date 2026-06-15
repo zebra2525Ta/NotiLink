@@ -11,9 +11,10 @@ export async function GET() {
     `https://newsdata.io/api/1/news?apikey=${process.env.NEWSDATA_API_KEY}&country=jp&language=ja&size=5`
   );
   const data = await res.json();
-  const articles = (data.results ?? []).map((r: { title: string; link: string }) => ({
+  const articles = (data.results ?? []).map((r: { title: string; link: string; source_id?: string }) => ({
     title: r.title,
     link: r.link,
+    source: r.source_id ?? "",
   }));
   return NextResponse.json(articles);
 }
