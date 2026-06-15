@@ -214,7 +214,7 @@ export async function queryDatabase(
   });
 
   if (includeBody) {
-    await Promise.all(rows.map(async (row) => {
+    await Promise.all(rows.map(async (row: Record<string, string>) => {
       const body = await fetchPageBodyText(accessToken, row.__page_id);
       if (body) row["__body"] = body;
     }));
