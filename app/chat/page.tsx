@@ -66,7 +66,11 @@ export default function Chat() {
     };
   }, [drainQueue]);
 
-  useEffect(() => { textareaRef.current?.focus(); }, []);
+  useEffect(() => {
+    const preset = sessionStorage.getItem("chatPreset");
+    if (preset) { setInput(preset); sessionStorage.removeItem("chatPreset"); }
+    textareaRef.current?.focus();
+  }, []);
 
   // プレビューURLのメモリ解放
   useEffect(() => {
