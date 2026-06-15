@@ -9,7 +9,7 @@ export default function NotiLinkLogo({
 }) {
   return (
     <Image
-      src="/logo.png"
+      src="/logo.svg"
       alt="NotiLink"
       width={size}
       height={size}
