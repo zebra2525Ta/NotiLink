@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import NotiLinkLogo from "@/app/components/NotiLinkLogo";
 
 const SHORTCUTS = [
   { label: "Notion", scheme: "notion://", fallback: "https://notion.so", icon: "/notion.png" },
@@ -49,8 +50,9 @@ export default function Home() {
 
   return (
     <main className="flex flex-col min-h-screen bg-gray-950 text-white">
-      <header className="flex items-center px-5 py-4 border-b border-gray-800">
-        <span className="text-base font-semibold tracking-wide">NotiLink</span>
+      <header className="flex items-center gap-2 px-5 py-4 border-b border-gray-800">
+        <NotiLinkLogo size={28} />
+        <span className="text-base font-semibold tracking-[0.1em]" style={{ color: "#FCD34D" }}>NotiLink</span>
       </header>
 
       <div className="flex-1 flex flex-col gap-5 p-5 overflow-y-auto pb-24">
