@@ -43,7 +43,7 @@ type Stock = {
 const S = {
   bg: "#0d0f14", surf: "#141720", surf2: "#1a1e2a",
   border: "rgba(255,255,255,0.07)", border2: "rgba(255,255,255,0.12)",
-  text: "#e8eaf0", muted: "#6b7280",
+  text: "#e8eaf0", muted: "#9ca3af",
   accent: "#6366f1", accent2: "#818cf8",
 };
 
@@ -51,7 +51,7 @@ const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase", marginBottom: 10 }}>
+    <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: S.muted, textTransform: "uppercase", marginBottom: 10 }}>
       {children}
     </p>
   );
