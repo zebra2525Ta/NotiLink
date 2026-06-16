@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
-const ICONS: Record<string, string> = {
-  "01": "☀️", "02": "🌤️", "03": "☁️", "04": "☁️",
-  "09": "🌧️", "10": "🌦️", "11": "⛈️", "13": "❄️", "50": "🌫️",
-};
+const owIcon = (code: string) =>
+  `https://openweathermap.org/img/wn/${code}@2x.png`;
 
 export async function GET() {
   try {
@@ -19,16 +17,13 @@ export async function GET() {
       return NextResponse.json({ error: "weather data unavailable" }, { status: 502 });
     }
 
-    const iconKey = (data.weather[0].icon as string).slice(0, 2);
-
     const forecast = [
-      { time: "今", icon: ICONS[iconKey] ?? "🌡️", temp: Math.round(data.main.temp) },
+      { time: "今", icon: owIcon(data.weather[0].icon), temp: Math.round(data.main.temp) },
       ...((fdata.list ?? []) as { dt: number; weather: { icon: string }[]; main: { temp: number } }[])
         .slice(0, 4)
         .map((item) => {
           const hour = new Date(item.dt * 1000).getHours();
-          const ik = (item.weather[0].icon as string).slice(0, 2);
-          return { time: `${hour}時`, icon: ICONS[ik] ?? "🌡️", temp: Math.round(item.main.temp) };
+          return { time: `${hour}時`, icon: owIcon(item.weather[0].icon), temp: Math.round(item.main.temp) };
         }),
     ];
 
@@ -48,7 +43,7 @@ export async function GET() {
       sunset: data.sys?.sunset
         ? new Date(data.sys.sunset * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })
         : null,
-      icon: ICONS[iconKey] ?? "🌡️",
+      icon: owIcon(data.weather[0].icon),
       forecast,
     });
   } catch (error) {

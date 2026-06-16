@@ -177,8 +177,8 @@ export default function Home() {
             {weather ? (
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 56, height: 56, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>
-                    {weather.icon}
+                  <div style={{ width: 56, height: 56, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    <img src={weather.icon} alt={weather.condition} style={{ width: 56, height: 56 }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -211,7 +211,7 @@ export default function Home() {
                     {weather.forecast.map((slot, i) => (
                       <div key={i} style={{ flex: "0 0 auto", minWidth: 52, textAlign: "center", padding: "6px 4px", background: S.bg, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
                         <div style={{ fontSize: 11, color: S.muted }}>{slot.time}</div>
-                        <div style={{ fontSize: 18, margin: "3px 0" }}>{slot.icon}</div>
+                        <img src={slot.icon} alt="" style={{ width: 36, height: 36, margin: "0 auto", display: "block" }} />
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{slot.temp}°</div>
                       </div>
                     ))}
@@ -341,8 +341,8 @@ export default function Home() {
           {weather ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 52, height: 52, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
-                  {weather.icon}
+                <div style={{ width: 52, height: 52, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                  <img src={weather.icon} alt={weather.condition} style={{ width: 52, height: 52 }} />
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -375,7 +375,7 @@ export default function Home() {
                   {weather.forecast.map((slot, i) => (
                     <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 4px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
                       <div style={{ fontSize: 12, color: S.muted }}>{slot.time}</div>
-                      <div style={{ fontSize: 16, margin: "3px 0" }}>{slot.icon}</div>
+                      <img src={slot.icon} alt="" style={{ width: 36, height: 36, margin: "0 auto", display: "block" }} />
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{slot.temp}°</div>
                     </div>
                   ))}
