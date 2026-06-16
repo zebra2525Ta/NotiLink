@@ -168,36 +168,40 @@ export default function Home() {
           <SectionLabel>天気 — 大阪</SectionLabel>
           {weather ? (
             <>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 52, height: 52, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
-                    {weather.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 32, fontWeight: 500, lineHeight: 1 }}>{weather.temp}°</div>
-                    <div style={{ fontSize: 12, color: S.muted, marginTop: 4 }}>{weather.condition}</div>
-                    <div style={{ fontSize: 11, color: S.accent2, marginTop: 2 }}>大阪市 · 湿度 {weather.humidity}%</div>
-                  </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 52, height: 52, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
+                  {weather.icon}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, textAlign: "right" }}>
-                  <span style={{ fontSize: 12, color: S.muted }}>最高 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMax}°</span></span>
-                  <span style={{ fontSize: 12, color: S.muted }}>最低 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMin}°</span></span>
-                  <span style={{ fontSize: 12, color: S.muted }}>体感 <span style={{ color: S.text, fontWeight: 500 }}>{weather.feelsLike}°</span></span>
-                  <span style={{ fontSize: 12, color: S.muted }}>風速 <span style={{ color: S.text, fontWeight: 500 }}>{weather.windSpeed}m/s</span></span>
-                  <span style={{ fontSize: 12, color: S.muted }}>気圧 <span style={{ color: S.text, fontWeight: 500 }}>{weather.pressure}hPa</span></span>
-                  {weather.rain != null && (
-                    <span style={{ fontSize: 12, color: S.muted }}>降水 <span style={{ color: "#60a5fa", fontWeight: 500 }}>{weather.rain}mm/h</span></span>
-                  )}
-                  {weather.sunrise && (
-                    <span style={{ fontSize: 12, color: S.muted }}>日の出 <span style={{ color: S.text, fontWeight: 500 }}>{weather.sunrise}</span></span>
-                  )}
-                  {weather.sunset && (
-                    <span style={{ fontSize: 12, color: S.muted }}>日の入 <span style={{ color: S.text, fontWeight: 500 }}>{weather.sunset}</span></span>
-                  )}
+                <div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontSize: 32, fontWeight: 500, lineHeight: 1 }}>{weather.temp}°</span>
+                    <span style={{ fontSize: 12, color: S.muted }}>体感 {weather.feelsLike}°</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: S.muted, marginTop: 4 }}>{weather.condition}</div>
+                  <div style={{ fontSize: 11, color: S.accent2, marginTop: 2 }}>大阪市 · 最高{weather.tempMax}° 最低{weather.tempMin}°</div>
                 </div>
               </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginTop: 14 }}>
+                {[
+                  { icon: "💧", label: "湿度", value: `${weather.humidity}%` },
+                  { icon: "🌬️", label: "風速", value: `${weather.windSpeed}m/s` },
+                  { icon: "📊", label: "気圧", value: `${weather.pressure}hPa` },
+                  ...(weather.rain != null ? [{ icon: "☔", label: "降水", value: `${weather.rain}mm/h` }] : []),
+                  ...(weather.sunrise ? [{ icon: "🌅", label: "日の出", value: weather.sunrise }] : []),
+                  ...(weather.sunset ? [{ icon: "🌇", label: "日の入", value: weather.sunset }] : []),
+                ].map((stat, i) => (
+                  <div key={i} style={{ padding: "6px 8px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
+                    <div style={{ fontSize: 10, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>
+                      <span style={{ fontSize: 11 }}>{stat.icon}</span>{stat.label}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: S.text, marginTop: 2 }}>{stat.value}</div>
+                  </div>
+                ))}
+              </div>
+
               {weather.forecast && (
-                <div style={{ display: "flex", gap: 3, marginTop: 14 }}>
+                <div style={{ display: "flex", gap: 3, marginTop: 10 }}>
                   {weather.forecast.map((slot, i) => (
                     <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 4px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
                       <div style={{ fontSize: 10, color: S.muted }}>{slot.time}</div>
