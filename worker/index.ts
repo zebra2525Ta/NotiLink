@@ -1,4 +1,6 @@
-declare const self: ServiceWorkerGlobalScope;
+/// <reference lib="webworker" />
+export {};
+declare let self: ServiceWorkerGlobalScope;
 
 self.addEventListener("push", (event: PushEvent) => {
   const data = event.data?.json() ?? {};
@@ -12,7 +14,6 @@ self.addEventListener("push", (event: PushEvent) => {
       icon: "/icon-192.png",
       badge: "/icon-192.png",
       data: { url },
-      vibrate: [200, 100, 200],
     })
   );
 });
