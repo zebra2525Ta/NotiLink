@@ -42,6 +42,12 @@ export async function GET() {
       pressure: data.main.pressure,
       windSpeed: Math.round((data.wind?.speed ?? 0) * 10) / 10,
       rain: data.rain?.["1h"] ?? null,
+      sunrise: data.sys?.sunrise
+        ? new Date(data.sys.sunrise * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })
+        : null,
+      sunset: data.sys?.sunset
+        ? new Date(data.sys.sunset * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })
+        : null,
       icon: ICONS[iconKey] ?? "🌡️",
       forecast,
     });

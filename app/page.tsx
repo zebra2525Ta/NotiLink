@@ -31,6 +31,7 @@ type Weather = {
   condition: string; temp: number; tempMax: number; tempMin: number;
   feelsLike: number; humidity: number; pressure: number;
   windSpeed: number; rain: number | null;
+  sunrise: string | null; sunset: string | null;
   icon: string; forecast?: ForecastSlot[];
 };
 type NewsItem = { title: string; link: string; source?: string };
@@ -186,6 +187,12 @@ export default function Home() {
                   <span style={{ fontSize: 12, color: S.muted }}>気圧 <span style={{ color: S.text, fontWeight: 500 }}>{weather.pressure}hPa</span></span>
                   {weather.rain != null && (
                     <span style={{ fontSize: 12, color: S.muted }}>降水 <span style={{ color: "#60a5fa", fontWeight: 500 }}>{weather.rain}mm/h</span></span>
+                  )}
+                  {weather.sunrise && (
+                    <span style={{ fontSize: 12, color: S.muted }}>日の出 <span style={{ color: S.text, fontWeight: 500 }}>{weather.sunrise}</span></span>
+                  )}
+                  {weather.sunset && (
+                    <span style={{ fontSize: 12, color: S.muted }}>日の入 <span style={{ color: S.text, fontWeight: 500 }}>{weather.sunset}</span></span>
                   )}
                 </div>
               </div>
