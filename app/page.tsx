@@ -84,14 +84,14 @@ function ShortcutTile({ icon, label, onClick }: { icon?: string; label: string; 
   return (
     <button
       onClick={onClick}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "14px 8px", borderRadius: 12, cursor: "pointer", background: S.surf, border: `0.5px solid ${S.border2}`, color: S.text, width: "100%" }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "8px 4px", borderRadius: 10, cursor: "pointer", background: S.surf, border: `0.5px solid ${S.border2}`, color: S.text, width: "100%" }}
     >
-      <div style={{ width: 44, height: 44, background: S.surf2, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      <div style={{ width: 32, height: 32, background: S.surf2, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         {icon
-          ? <img src={icon} alt={label} style={{ width: 44, height: 44, objectFit: "cover" }} />
-          : <span style={{ fontSize: 18, color: S.accent2 }}>✦</span>}
+          ? <img src={icon} alt={label} style={{ width: 32, height: 32, objectFit: "cover" }} />
+          : <span style={{ fontSize: 14, color: S.accent2 }}>✦</span>}
       </div>
-      <span style={{ fontSize: 12, fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 500 }}>{label}</span>
     </button>
   );
 }
@@ -222,16 +222,16 @@ export default function Home() {
           </section>
 
           {/* ── ショートカット ── */}
-          <section style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}` }}>
+          <section style={{ background: S.surf, borderRadius: 14, padding: "12px 12px", border: `0.5px solid ${S.border}` }}>
             <SectionLabel>ショートカット</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 8 }}>
               {SHORTCUTS.map(s => (
                 <ShortcutTile key={s.label} icon={s.icon} label={s.label} onClick={() => openApp(s.scheme, s.fallback)} />
               ))}
             </div>
             <button
               onClick={() => router.push("/chat")}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, background: "rgba(99,102,241,0.12)", border: `0.5px solid rgba(99,102,241,0.3)`, color: S.accent2, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, background: "rgba(99,102,241,0.12)", border: `0.5px solid rgba(99,102,241,0.3)`, color: S.accent2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
             >
               <span>✦</span> Naviに話しかける
             </button>
