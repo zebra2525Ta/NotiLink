@@ -51,7 +51,7 @@ const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: S.muted, textTransform: "uppercase", marginBottom: 10 }}>
+    <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: S.muted, textTransform: "uppercase", marginBottom: 10 }}>
       {children}
     </p>
   );
@@ -72,8 +72,8 @@ function ShortcutRow({ icon, label, desc, onClick }: { icon?: string; label: str
           : <span style={{ fontSize: 14, color: S.accent2 }}>✦</span>}
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 11, color: S.muted, marginTop: 1 }}>{desc}</div>
+        <div style={{ fontSize: 15, fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: 12, color: S.muted, marginTop: 1 }}>{desc}</div>
       </div>
     </button>
   );
@@ -129,7 +129,7 @@ export default function Home() {
   }
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: S.bg, color: S.text, fontFamily: "system-ui,sans-serif", overflow: "hidden" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: S.bg, color: S.text, fontFamily: "var(--font-mplus), system-ui, sans-serif", overflow: "hidden" }}>
 
       {/* ── Topbar ── */}
       <header style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 20px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
@@ -140,11 +140,11 @@ export default function Home() {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
           </div>
           <NotiLinkLogo size={20} bg={S.surf} />
-          <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: "0.05em" }}>NotiLink</span>
-          <span style={{ fontSize: 10, padding: "2px 8px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>AI秘書</span>
+          <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "0.05em" }}>NotiLink</span>
+          <span style={{ fontSize: 11, padding: "2px 8px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>AI秘書</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 12, color: S.muted, fontVariantNumeric: "tabular-nums" }}>{time}</span>
+          <span style={{ fontSize: 13, color: S.muted, fontVariantNumeric: "tabular-nums" }}>{time}</span>
           <div style={{ width: 6, height: 6, background: "#10b981", borderRadius: "50%", boxShadow: "0 0 0 2px rgba(16,185,129,0.2)" }} />
         </div>
       </header>
@@ -174,11 +174,11 @@ export default function Home() {
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 32, fontWeight: 500, lineHeight: 1 }}>{weather.temp}°</span>
-                    <span style={{ fontSize: 12, color: S.muted }}>体感 {weather.feelsLike}°</span>
+                    <span style={{ fontSize: 38, fontWeight: 500, lineHeight: 1 }}>{weather.temp}°</span>
+                    <span style={{ fontSize: 14, color: S.muted }}>体感 {weather.feelsLike}°</span>
                   </div>
-                  <div style={{ fontSize: 12, color: S.muted, marginTop: 4 }}>{weather.condition}</div>
-                  <div style={{ fontSize: 11, color: S.accent2, marginTop: 2 }}>大阪市 · 最高{weather.tempMax}° 最低{weather.tempMin}°</div>
+                  <div style={{ fontSize: 14, color: S.muted, marginTop: 4 }}>{weather.condition}</div>
+                  <div style={{ fontSize: 13, color: S.accent2, marginTop: 2 }}>大阪市 · 最高{weather.tempMax}° 最低{weather.tempMin}°</div>
                 </div>
               </div>
 
@@ -192,10 +192,10 @@ export default function Home() {
                   ...(weather.sunset ? [{ icon: "🌇", label: "日の入", value: weather.sunset }] : []),
                 ].map((stat, i) => (
                   <div key={i} style={{ padding: "6px 8px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
-                    <div style={{ fontSize: 10, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>
-                      <span style={{ fontSize: 11 }}>{stat.icon}</span>{stat.label}
+                    <div style={{ fontSize: 11, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>
+                      <span style={{ fontSize: 12 }}>{stat.icon}</span>{stat.label}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: S.text, marginTop: 2 }}>{stat.value}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: S.text, marginTop: 2 }}>{stat.value}</div>
                   </div>
                 ))}
               </div>
@@ -204,9 +204,9 @@ export default function Home() {
                 <div style={{ display: "flex", gap: 3, marginTop: 10 }}>
                   {weather.forecast.map((slot, i) => (
                     <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 4px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
-                      <div style={{ fontSize: 10, color: S.muted }}>{slot.time}</div>
-                      <div style={{ fontSize: 14, margin: "3px 0" }}>{slot.icon}</div>
-                      <div style={{ fontSize: 13, fontWeight: 500 }}>{slot.temp}°</div>
+                      <div style={{ fontSize: 12, color: S.muted }}>{slot.time}</div>
+                      <div style={{ fontSize: 16, margin: "3px 0" }}>{slot.icon}</div>
+                      <div style={{ fontSize: 14, fontWeight: 500 }}>{slot.temp}°</div>
                     </div>
                   ))}
                 </div>
@@ -220,11 +220,11 @@ export default function Home() {
           <SectionLabel>注目銘柄</SectionLabel>
           {stocks.length > 0 ? stocks.map(s => (
             <div key={s.code} style={{ display: "flex", alignItems: "center", padding: "9px 10px", borderRadius: 8, marginBottom: 4, background: S.surf, border: `0.5px solid ${S.border}` }}>
-              <div style={{ fontSize: 10, color: S.muted, minWidth: 36 }}>{s.code}</div>
+              <div style={{ fontSize: 12, color: S.muted, minWidth: 36 }}>{s.code}</div>
               <Sparkline positive={s.positive} />
-              <div style={{ fontSize: 13, fontWeight: 500, flex: 1, marginLeft: 8 }}>{s.name}</div>
-              <div style={{ fontSize: 14, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.close.toLocaleString()}円</div>
-              <div style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, marginLeft: 8, fontVariantNumeric: "tabular-nums", minWidth: 72, textAlign: "right", color: s.positive ? "#10b981" : "#f43f5e", background: s.positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)" }}>
+              <div style={{ fontSize: 14, fontWeight: 500, flex: 1, marginLeft: 8 }}>{s.name}</div>
+              <div style={{ fontSize: 15, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.close.toLocaleString()}円</div>
+              <div style={{ fontSize: 12, padding: "2px 7px", borderRadius: 4, marginLeft: 8, fontVariantNumeric: "tabular-nums", minWidth: 72, textAlign: "right", color: s.positive ? "#10b981" : "#f43f5e", background: s.positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)" }}>
                 {s.positive ? "▲" : "▼"} {s.changePercent}%
               </div>
             </div>
@@ -242,8 +242,8 @@ export default function Home() {
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div>
-                  <p style={{ fontSize: 12, color: S.text, lineHeight: 1.5 }}>{n.title}</p>
-                  {n.source && <p style={{ fontSize: 10, color: S.muted, marginTop: 4 }}>{n.source}</p>}
+                  <p style={{ fontSize: 13, color: S.text, lineHeight: 1.5 }}>{n.title}</p>
+                  {n.source && <p style={{ fontSize: 11, color: S.muted, marginTop: 4 }}>{n.source}</p>}
                 </div>
               </a>
             )) : <p style={{ fontSize: 13, color: S.muted, gridColumn: "1/3" }}>読み込み中...</p>}
@@ -261,16 +261,16 @@ export default function Home() {
               const evs = eventsByDay[day] ?? [];
               return (
                 <div key={day}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: i === 0 ? S.accent2 : S.muted, marginBottom: 2 }}>{label}</div>
-                  <div style={{ fontSize: 10, color: S.muted, marginBottom: 6 }}>{dateLabel}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: i === 0 ? S.accent2 : S.muted, marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: S.muted, marginBottom: 6 }}>{dateLabel}</div>
                   {scheduleLoading ? (
                     <div style={{ fontSize: 10, color: S.border2 }}>...</div>
                   ) : evs.length === 0 ? (
                     <div style={{ fontSize: 11, color: S.border2 }}>—</div>
                   ) : evs.map((ev, j) => (
                     <div key={j} style={{ marginBottom: 4, padding: "4px 6px", background: S.surf2, borderRadius: 5, borderLeft: `2px solid ${S.accent}` }}>
-                      <div style={{ fontSize: 9, color: S.accent2, marginBottom: 1 }}>{formatEventTime(ev.start, ev.end)}</div>
-                      <div style={{ fontSize: 11, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+                      <div style={{ fontSize: 10, color: S.accent2, marginBottom: 1 }}>{formatEventTime(ev.start, ev.end)}</div>
+                      <div style={{ fontSize: 12, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
                     </div>
                   ))}
                 </div>
