@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "NotiLink",
-  description: "殴り書きメモをNotionに自動保存するAI秘書",
+  description: "殴り書きメモをNotionに自動保存するNavi",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

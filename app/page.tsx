@@ -136,7 +136,7 @@ export default function Home() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
 <NotiLinkLogo size={20} bg={S.surf} />
           <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "0.05em" }}>NotiLink</span>
-          <span style={{ fontSize: 11, padding: "2px 8px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>AI秘書</span>
+          <span style={{ fontSize: 11, padding: "2px 8px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>Navi</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 13, color: S.muted, fontVariantNumeric: "tabular-nums" }}>{time}</span>
@@ -155,7 +155,7 @@ export default function Home() {
           ))}
           <div style={{ height: 0.5, background: S.border, margin: "12px 0" }} />
           <SectionLabel>クイックアクション</SectionLabel>
-          <ShortcutRow label="AI秘書" desc="メモ登録・検索" onClick={() => router.push("/chat")} />
+          <ShortcutRow label="Navi" desc="メモ登録・検索" onClick={() => router.push("/chat")} />
         </div>
 
         {/* Col 2: Weather */}

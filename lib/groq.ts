@@ -32,7 +32,7 @@ export async function detectIntent(
 
   const modeHint = MODE_PROMPTS[mode];
 
-  const systemPrompt = `あなたはNotionを管理するAI秘書です。ユーザーの入力を以下の4種類に分類し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
+  const systemPrompt = `あなたはNotionを管理するNaviです。ユーザーの入力を以下の4種類に分類し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
 
 【今日の日付・時刻】
 ${buildDateContext()}
@@ -158,7 +158,7 @@ export async function generateProperties(
 
   const modeHint = MODE_PROMPTS[mode];
 
-  const systemPrompt = `あなたはNotionデータベースへのデータ登録を行うAI秘書です。ユーザーの入力をNotionのプロパティに変換し、JSONのみを返してください。前置き・説明文・コードブロックは一切含めないこと。
+  const systemPrompt = `あなたはNotionデータベースへのデータ登録を行うNaviです。ユーザーの入力をNotionのプロパティに変換し、JSONのみを返してください。前置き・説明文・コードブロックは一切含めないこと。
 
 データベース名: ${schema.title}
 
@@ -240,7 +240,7 @@ export async function generateQueryResponse(
     messages: [
       {
         role: "system",
-        content: `あなたはAI秘書です。Notionデータベース「${dbTitle}」の内容をもとに、ユーザーの質問に日本語で簡潔に答えてください。${modeHint}\n\n【今日の日付】\n${buildDateContext()}`,
+        content: `あなたはNaviです。Notionデータベース「${dbTitle}」の内容をもとに、ユーザーの質問に日本語で簡潔に答えてください。${modeHint}\n\n【今日の日付】\n${buildDateContext()}`,
       },
       {
         role: "user",

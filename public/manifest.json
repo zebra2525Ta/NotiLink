@@ -1,7 +1,7 @@
 {
   "name": "NotiLink",
   "short_name": "NotiLink",
-  "description": "殴り書きメモをNotionに自動保存するAI秘書",
+  "description": "殴り書きメモをNotionに自動保存するNavi",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

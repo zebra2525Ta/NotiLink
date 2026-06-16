@@ -261,7 +261,7 @@ export default function Chat() {
       <header className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
         <Link href="/" className="text-gray-400 hover:text-white transition-colors text-lg">←</Link>
         <div className="flex flex-col items-center">
-          <span className="text-base font-semibold tracking-wide">AI秘書</span>
+          <span className="text-base font-semibold tracking-wide">Navi</span>
           {!isOnline && (
             <span className="text-xs text-amber-400">
               オフライン{pendingCount > 0 ? `（${pendingCount}件待機中）` : ""}
