@@ -51,7 +51,7 @@ const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: S.muted, textTransform: "uppercase", marginBottom: 10 }}>
+    <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: "#9ca3af", textTransform: "uppercase", marginBottom: 10 }}>
       {children}
     </p>
   );
