@@ -157,8 +157,7 @@ export default function Home() {
           ))}
           <div style={{ height: 0.5, background: S.border, margin: "12px 0" }} />
           <SectionLabel>クイックアクション</SectionLabel>
-          <ShortcutRow label="メモを追加" desc="AI秘書でメモ登録" onClick={() => router.push("/chat")} />
-          <ShortcutRow label="検索" desc="AIで横断検索" onClick={() => router.push("/chat")} />
+          <ShortcutRow label="AI秘書" desc="メモ登録・検索" onClick={() => router.push("/chat")} />
         </div>
 
         {/* Col 2: Weather */}
