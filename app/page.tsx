@@ -134,12 +134,7 @@ export default function Home() {
       {/* ── Topbar ── */}
       <header style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 20px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ display: "flex", gap: 5 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f43f5e" }} />
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
-          </div>
-          <NotiLinkLogo size={20} bg={S.surf} />
+<NotiLinkLogo size={20} bg={S.surf} />
           <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "0.05em" }}>NotiLink</span>
           <span style={{ fontSize: 11, padding: "2px 8px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>AI秘書</span>
         </div>
