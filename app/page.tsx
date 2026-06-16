@@ -217,7 +217,7 @@ export default function Home() {
         <div style={{ gridColumn: "2 / 4", gridRow: 2, background: S.bg, padding: 16 }}>
           <SectionLabel>ニュース</SectionLabel>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {news.length > 0 ? news.slice(0, 4).map((n, i) => (
+            {news.length > 0 ? news.slice(0, 8).map((n, i) => (
               <a key={i} href={n.link} target="_blank" rel="noopener noreferrer"
                 style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}`, textDecoration: "none" }}>
                 <span style={{ fontSize: 20, fontWeight: 500, color: S.border2, lineHeight: 1, flexShrink: 0, width: 20 }}>

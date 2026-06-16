@@ -8,7 +8,7 @@ export async function GET() {
   }
 
   const res = await fetch(
-    `https://newsdata.io/api/1/news?apikey=${process.env.NEWSDATA_API_KEY}&country=jp&language=ja&size=5`
+    `https://newsdata.io/api/1/news?apikey=${process.env.NEWSDATA_API_KEY}&country=jp&language=ja&size=10`
   );
   const data = await res.json();
   const articles = (data.results ?? []).map((r: { title: string; link: string; source_id?: string }) => ({
