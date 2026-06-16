@@ -27,7 +27,7 @@ export async function GET() {
     // JST 今日〜5日後
     const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const todayStr = jstNow.toISOString().split("T")[0];
-    const plus5Str = new Date(jstNow.getTime() + 5 * 86400 * 1000)
+    const plus5Str = new Date(jstNow.getTime() + 6 * 86400 * 1000)
       .toISOString().split("T")[0];
 
     const res = await fetch(`https://api.notion.com/v1/databases/${scheduleDb.id}/query`, {

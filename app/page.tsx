@@ -113,7 +113,7 @@ export default function Home() {
   }, []);
 
   // 今日〜5日後の日付リスト（JST）
-  const days = Array.from({ length: 6 }, (_, i) => {
+  const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() + (9 * 3600 + i * 86400) * 1000);
     return d.toISOString().split("T")[0];
   });
@@ -235,8 +235,8 @@ export default function Home() {
 
         {/* Col 1-3: Schedule */}
         <div style={{ gridColumn: "1 / 4", gridRow: 3, background: S.surf, padding: "14px 20px", borderTop: `1px solid ${S.border2}` }}>
-          <SectionLabel>スケジュール（直近6日）</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+          <SectionLabel>スケジュール（直近7日）</SectionLabel>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
             {days.map((day, i) => {
               const dow = new Date(day).getUTCDay();
               const label = i === 0 ? "今日" : i === 1 ? "明日" : `${DAY_LABELS[dow]}曜`;
