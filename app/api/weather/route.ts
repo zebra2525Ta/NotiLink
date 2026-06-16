@@ -37,8 +37,11 @@ export async function GET() {
       temp: Math.round(data.main.temp),
       tempMax: Math.round(data.main.temp_max),
       tempMin: Math.round(data.main.temp_min),
+      feelsLike: Math.round(data.main.feels_like),
       humidity: data.main.humidity,
       pressure: data.main.pressure,
+      windSpeed: Math.round((data.wind?.speed ?? 0) * 10) / 10,
+      rain: data.rain?.["1h"] ?? null,
       icon: ICONS[iconKey] ?? "🌡️",
       forecast,
     });

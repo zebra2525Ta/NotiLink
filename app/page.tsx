@@ -29,7 +29,9 @@ function Sparkline({ positive }: { positive: boolean }) {
 type ForecastSlot = { time: string; icon: string; temp: number };
 type Weather = {
   condition: string; temp: number; tempMax: number; tempMin: number;
-  humidity: number; pressure: number; icon: string; forecast?: ForecastSlot[];
+  feelsLike: number; humidity: number; pressure: number;
+  windSpeed: number; rain: number | null;
+  icon: string; forecast?: ForecastSlot[];
 };
 type NewsItem = { title: string; link: string; source?: string };
 type Stock = {
@@ -179,7 +181,12 @@ export default function Home() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, textAlign: "right" }}>
                   <span style={{ fontSize: 12, color: S.muted }}>最高 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMax}°</span></span>
                   <span style={{ fontSize: 12, color: S.muted }}>最低 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMin}°</span></span>
+                  <span style={{ fontSize: 12, color: S.muted }}>体感 <span style={{ color: S.text, fontWeight: 500 }}>{weather.feelsLike}°</span></span>
+                  <span style={{ fontSize: 12, color: S.muted }}>風速 <span style={{ color: S.text, fontWeight: 500 }}>{weather.windSpeed}m/s</span></span>
                   <span style={{ fontSize: 12, color: S.muted }}>気圧 <span style={{ color: S.text, fontWeight: 500 }}>{weather.pressure}hPa</span></span>
+                  {weather.rain != null && (
+                    <span style={{ fontSize: 12, color: S.muted }}>降水 <span style={{ color: "#60a5fa", fontWeight: 500 }}>{weather.rain}mm/h</span></span>
+                  )}
                 </div>
               </div>
               {weather.forecast && (
