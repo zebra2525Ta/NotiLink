@@ -12,7 +12,7 @@ const MODE_PROMPTS: Record<Mode, string> = {
 };
 
 export interface IntentResult {
-  intent: "register" | "query" | "update_purchased";
+  intent: "register" | "query" | "update_purchased" | "answer";
   database_id: string;
   message: string | null;
   search_title?: string; // update_purchased時: 検索するアイテム名
@@ -32,12 +32,18 @@ export async function detectIntent(
 
   const modeHint = MODE_PROMPTS[mode];
 
-  const systemPrompt = `あなたはNotionを管理するAI秘書です。ユーザーの入力を以下の3種類に分類し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
+  const systemPrompt = `あなたはNotionを管理するAI秘書です。ユーザーの入力を以下の4種類に分類し、JSON形式のみで返答してください。前置き・説明文・コードブロックは一切含めないこと。
+
+【今日の日付・時刻】
+${buildDateContext()}
 
 利用可能なデータベース:
 [
 ${dbList}
 ]
+
+【日時質問の場合】今日・明日・何曜日・何日・何時など日付や時刻を聞かれたとき（DBは不要）
+{"intent":"answer","database_id":"","message":"日付や時刻を日本語で答える（例:今日は2026年6月16日（月曜日）です）","confidence":100}
 
 【登録の場合】新しいデータを追加する（「〜買う」「〜予定」「〜行きたい」など）
 {"intent":"register","database_id":"最も適切なdatabase_idをそのままコピー","message":"秘書の一言（30文字以内）","content":"登録する内容のみ（「〜して」「〜登録」「〜メモ」などの指示表現を除いた純粋なコンテンツ）","confidence":85}
@@ -53,10 +59,22 @@ ${dbList}
 - messageは日本語
 - search_titleはアイテム名のみ（「柔軟剤を買った」→「柔軟剤」）
 - confidenceはDB選択の確信度（0〜100の整数）。どのDBか明確なら80以上、曖昧なら60未満にすること
-- YYYY-MM-DD形式の日付や時刻が含まれる場合はスケジュール・予定・カレンダー系のDBを優先すること
-- 「〜買う」「〜欲しい」「〜必要」などの購買意図、または文章でない単体の商品名・食材名・日用品名のみの入力は買い物リスト系のDBを選ぶこと（例：「長いも」「牛乳」「洗剤」→買い物リスト）
-- 感想・体験・気づき・料理メモなど述語を含む文章（「〜うまい」「〜楽しかった」「〜だった」「〜してみた」など）はスケジュール・買い物・場所系以外のメモ・日記・未分類系DBを選ぶこと（例：「長芋すって醤油かけたらうまい」→メモ系）
-- 場所名 + 「行きたい」「気になる」「訪れたい」はお出かけ・場所系DBを選ぶこと
+
+【スケジュール系DBを選ぶとき】
+- 日付・曜日・時刻 + 予定・イベントが含まれるとき（例:「明日3時病院」「土曜映画」「来週月曜バイト」）
+- YYYY-MM-DD形式の日付が含まれるとき
+
+【買い物リスト系DBを選ぶとき】
+- 商品名・食材名・日用品などの単体名詞のみの入力（例:「牛乳」「洗剤」「長いも」）
+- 「〜買う」「〜欲しい」「〜必要」などの購買意図があるとき
+
+【行きたいとこ・場所系DBを選ぶとき】
+- 場所名 + 「行きたい」「気になる」「訪れたい」「おすすめ」（例:「大阪のカフェ行きたい」「京都行ってみたい」）
+
+【未分類・メモ系DBを選ぶとき（デフォルト）】
+- 感想・体験・気づき・アイデア・日記的な内容（例:「長芋すって醤油かけたらうまい」「今日疲れた」）
+- 上記のどのDBにも明確に当てはまらないとき
+- 迷ったら必ず未分類を選ぶこと（confidence < 60）
 ${modeHint ? `- ${modeHint}` : ""}`;
 
   const completion = await groq.chat.completions.create({
@@ -94,11 +112,6 @@ function buildDateContext(): string {
     "",
     "【今週 月〜日】",
   ];
-  for (let i = 0; i < 7; i++) {
-    const d = addDays(thisMonday, i);
-    lines.push(`  今週${DAY_LABEL[i === 6 ? 0 : i + 1 === 7 ? 0 : (i + 1)]}: `);
-  }
-  // 今週
   for (let i = 0; i < 7; i++) {
     const d = addDays(thisMonday, i);
     const dow = d.getUTCDay();
@@ -227,7 +240,7 @@ export async function generateQueryResponse(
     messages: [
       {
         role: "system",
-        content: `あなたはAI秘書です。Notionデータベース「${dbTitle}」の内容をもとに、ユーザーの質問に日本語で簡潔に答えてください。${modeHint}`,
+        content: `あなたはAI秘書です。Notionデータベース「${dbTitle}」の内容をもとに、ユーザーの質問に日本語で簡潔に答えてください。${modeHint}\n\n【今日の日付】\n${buildDateContext()}`,
       },
       {
         role: "user",

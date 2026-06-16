@@ -178,6 +178,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (intent.intent === "answer") {
+      return NextResponse.json({ message: intent.message });
+    }
+
     if (intent.intent === "query") {
       const schema = schemas.find((s) => s.id === intent.database_id);
       // rich_textフィールドのないDB（未分類など）はページ本文も取得してGroqに渡す
