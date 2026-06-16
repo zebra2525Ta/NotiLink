@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import NotiLinkLogo from "@/app/components/NotiLinkLogo";
+import type { ScheduleEvent } from "@/app/api/schedule/route";
 
 const SHORTCUTS = [
   { label: "Notion", desc: "ノート・DB", scheme: "notion://", fallback: "https://notion.so", icon: "/notion.png" },
@@ -43,6 +44,8 @@ const S = {
   accent: "#6366f1", accent2: "#818cf8",
 };
 
+const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+
 function SectionLabel({ children }: { children: string }) {
   return (
     <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: S.muted, textTransform: "uppercase", marginBottom: 10 }}>
@@ -73,21 +76,31 @@ function ShortcutRow({ icon, label, desc, onClick }: { icon?: string; label: str
   );
 }
 
+function formatEventTime(start: string, end: string | null): string {
+  if (!start.includes("T")) return "終日";
+  const s = start.split("T")[1].slice(0, 5);
+  if (!end || !end.includes("T")) return s;
+  return `${s}〜${end.split("T")[1].slice(0, 5)}`;
+}
+
 export default function Home() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [time, setTime] = useState("");
-  const [input, setInput] = useState("");
-  const [reply, setReply] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const replyRef = useRef<HTMLDivElement>(null);
+  const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     fetch("/api/weather").then(r => r.json()).then(setWeather).catch(() => null);
     fetch("/api/news").then(r => r.json()).then(setNews).catch(() => []);
     fetch("/api/stocks").then(r => r.json()).then(setStocks).catch(() => []);
+    fetch("/api/schedule")
+      .then(r => r.json())
+      .then(data => { setSchedule(Array.isArray(data) ? data : []); })
+      .catch(() => {})
+      .finally(() => setScheduleLoading(false));
 
     const tick = () => {
       const d = new Date();
@@ -99,29 +112,17 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (reply) replyRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [reply]);
+  // 今日〜5日後の日付リスト（JST）
+  const days = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(Date.now() + (9 * 3600 + i * 86400) * 1000);
+    return d.toISOString().split("T")[0];
+  });
 
-  async function handleSend() {
-    const q = input.trim();
-    if (!q || loading) return;
-    setInput("");
-    setLoading(true);
-    setReply(null);
-    try {
-      const res = await fetch("/api/memo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: q, mode: "normal" }),
-      });
-      const data = await res.json();
-      setReply(data.message ?? "Notionに保存しました。");
-    } catch {
-      setReply("エラーが発生しました。");
-    } finally {
-      setLoading(false);
-    }
+  const eventsByDay: Record<string, ScheduleEvent[]> = {};
+  for (const day of days) eventsByDay[day] = [];
+  for (const ev of schedule) {
+    const day = ev.start.split("T")[0];
+    if (eventsByDay[day]) eventsByDay[day].push(ev);
   }
 
   return (
@@ -145,138 +146,122 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── Body: 7:3 split ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* ── Dashboard Grid ── */}
+      <div style={{ flex: 1, overflow: "auto", display: "grid", gridTemplateColumns: "220px 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 1, background: S.border }}>
 
-        {/* ── Top 70%: Dashboard ── */}
-        <div style={{ flex: 7, overflow: "auto", display: "grid", gridTemplateColumns: "220px 1fr 1fr", gridTemplateRows: "auto auto", gap: 1, background: S.border }}>
+        {/* Col 1: Shortcuts (spans rows 1-2) */}
+        <div style={{ gridColumn: 1, gridRow: "1 / 3", background: S.surf, padding: 16, borderRight: `1px solid ${S.border}` }}>
+          <SectionLabel>ショートカット</SectionLabel>
+          {SHORTCUTS.map(s => (
+            <ShortcutRow key={s.label} icon={s.icon} label={s.label} desc={s.desc} onClick={() => openApp(s.scheme, s.fallback)} />
+          ))}
+          <div style={{ height: 0.5, background: S.border, margin: "12px 0" }} />
+          <SectionLabel>クイックアクション</SectionLabel>
+          <ShortcutRow label="メモを追加" desc="AI秘書でメモ登録" onClick={() => router.push("/chat")} />
+          <ShortcutRow label="検索" desc="AIで横断検索" onClick={() => router.push("/chat")} />
+        </div>
 
-          {/* Col 1: Shortcuts (spans 2 rows) */}
-          <div style={{ gridColumn: 1, gridRow: "1 / 3", background: S.surf, padding: 16, borderRight: `1px solid ${S.border}` }}>
-            <SectionLabel>ショートカット</SectionLabel>
-            {SHORTCUTS.map(s => (
-              <ShortcutRow key={s.label} icon={s.icon} label={s.label} desc={s.desc} onClick={() => openApp(s.scheme, s.fallback)} />
-            ))}
-            <div style={{ height: 0.5, background: S.border, margin: "12px 0" }} />
-            <SectionLabel>クイックアクション</SectionLabel>
-            <ShortcutRow label="メモを追加" desc="新規ノート作成" onClick={() => router.push("/chat")} />
-            <ShortcutRow label="検索" desc="全体横断検索" onClick={() => router.push("/chat")} />
-          </div>
-
-          {/* Col 2: Weather */}
-          <div style={{ gridColumn: 2, gridRow: 1, background: S.bg, padding: 16 }}>
-            <SectionLabel>天気 — 大阪</SectionLabel>
-            {weather ? (
-              <>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ width: 52, height: 52, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
-                      {weather.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 32, fontWeight: 500, lineHeight: 1 }}>{weather.temp}°</div>
-                      <div style={{ fontSize: 12, color: S.muted, marginTop: 4 }}>{weather.condition}</div>
-                      <div style={{ fontSize: 11, color: S.accent2, marginTop: 2 }}>大阪市 · 湿度 {weather.humidity}%</div>
-                    </div>
+        {/* Col 2: Weather */}
+        <div style={{ gridColumn: 2, gridRow: 1, background: S.bg, padding: 16 }}>
+          <SectionLabel>天気 — 大阪</SectionLabel>
+          {weather ? (
+            <>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 52, height: 52, background: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(129,140,248,0.06))", border: "0.5px solid rgba(99,102,241,0.2)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
+                    {weather.icon}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5, textAlign: "right" }}>
-                    <span style={{ fontSize: 12, color: S.muted }}>最高 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMax}°</span></span>
-                    <span style={{ fontSize: 12, color: S.muted }}>最低 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMin}°</span></span>
-                    <span style={{ fontSize: 12, color: S.muted }}>気圧 <span style={{ color: S.text, fontWeight: 500 }}>{weather.pressure}hPa</span></span>
-                  </div>
-                </div>
-                {weather.forecast && (
-                  <div style={{ display: "flex", gap: 3, marginTop: 14 }}>
-                    {weather.forecast.map((slot, i) => (
-                      <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 4px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
-                        <div style={{ fontSize: 10, color: S.muted }}>{slot.time}</div>
-                        <div style={{ fontSize: 14, margin: "3px 0" }}>{slot.icon}</div>
-                        <div style={{ fontSize: 13, fontWeight: 500 }}>{slot.temp}°</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
-          </div>
-
-          {/* Col 3: Stocks */}
-          <div style={{ gridColumn: 3, gridRow: 1, background: S.bg, padding: 16 }}>
-            <SectionLabel>注目銘柄</SectionLabel>
-            {stocks.length > 0 ? stocks.map(s => (
-              <div key={s.code} style={{ display: "flex", alignItems: "center", padding: "9px 10px", borderRadius: 8, marginBottom: 4, background: S.surf, border: `0.5px solid ${S.border}` }}>
-                <div style={{ fontSize: 10, color: S.muted, minWidth: 36 }}>{s.code}</div>
-                <Sparkline positive={s.positive} />
-                <div style={{ fontSize: 13, fontWeight: 500, flex: 1, marginLeft: 8 }}>{s.name}</div>
-                <div style={{ fontSize: 14, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.close.toLocaleString()}円</div>
-                <div style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, marginLeft: 8, fontVariantNumeric: "tabular-nums", minWidth: 72, textAlign: "right", color: s.positive ? "#10b981" : "#f43f5e", background: s.positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)" }}>
-                  {s.positive ? "▲" : "▼"} {s.changePercent}%
-                </div>
-              </div>
-            )) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
-          </div>
-
-          {/* Col 2-3: News */}
-          <div style={{ gridColumn: "2 / 4", gridRow: 2, background: S.bg, padding: 16 }}>
-            <SectionLabel>ニュース</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {news.length > 0 ? news.slice(0, 4).map((n, i) => (
-                <a key={i} href={n.link} target="_blank" rel="noopener noreferrer"
-                  style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}`, textDecoration: "none" }}>
-                  <span style={{ fontSize: 20, fontWeight: 500, color: S.border2, lineHeight: 1, flexShrink: 0, width: 20 }}>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
                   <div>
-                    <p style={{ fontSize: 12, color: S.text, lineHeight: 1.5 }}>{n.title}</p>
-                    {n.source && <p style={{ fontSize: 10, color: S.muted, marginTop: 4 }}>{n.source}</p>}
+                    <div style={{ fontSize: 32, fontWeight: 500, lineHeight: 1 }}>{weather.temp}°</div>
+                    <div style={{ fontSize: 12, color: S.muted, marginTop: 4 }}>{weather.condition}</div>
+                    <div style={{ fontSize: 11, color: S.accent2, marginTop: 2 }}>大阪市 · 湿度 {weather.humidity}%</div>
                   </div>
-                </a>
-              )) : <p style={{ fontSize: 13, color: S.muted, gridColumn: "1/3" }}>読み込み中...</p>}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, textAlign: "right" }}>
+                  <span style={{ fontSize: 12, color: S.muted }}>最高 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMax}°</span></span>
+                  <span style={{ fontSize: 12, color: S.muted }}>最低 <span style={{ color: S.text, fontWeight: 500 }}>{weather.tempMin}°</span></span>
+                  <span style={{ fontSize: 12, color: S.muted }}>気圧 <span style={{ color: S.text, fontWeight: 500 }}>{weather.pressure}hPa</span></span>
+                </div>
+              </div>
+              {weather.forecast && (
+                <div style={{ display: "flex", gap: 3, marginTop: 14 }}>
+                  {weather.forecast.map((slot, i) => (
+                    <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 4px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
+                      <div style={{ fontSize: 10, color: S.muted }}>{slot.time}</div>
+                      <div style={{ fontSize: 14, margin: "3px 0" }}>{slot.icon}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{slot.temp}°</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
+        </div>
+
+        {/* Col 3: Stocks */}
+        <div style={{ gridColumn: 3, gridRow: 1, background: S.bg, padding: 16 }}>
+          <SectionLabel>注目銘柄</SectionLabel>
+          {stocks.length > 0 ? stocks.map(s => (
+            <div key={s.code} style={{ display: "flex", alignItems: "center", padding: "9px 10px", borderRadius: 8, marginBottom: 4, background: S.surf, border: `0.5px solid ${S.border}` }}>
+              <div style={{ fontSize: 10, color: S.muted, minWidth: 36 }}>{s.code}</div>
+              <Sparkline positive={s.positive} />
+              <div style={{ fontSize: 13, fontWeight: 500, flex: 1, marginLeft: 8 }}>{s.name}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{s.close.toLocaleString()}円</div>
+              <div style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, marginLeft: 8, fontVariantNumeric: "tabular-nums", minWidth: 72, textAlign: "right", color: s.positive ? "#10b981" : "#f43f5e", background: s.positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)" }}>
+                {s.positive ? "▲" : "▼"} {s.changePercent}%
+              </div>
             </div>
-          </div>
-
+          )) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
         </div>
 
-        {/* ── Bottom 30%: Chat ── */}
-        <div style={{ flex: 3, display: "flex", flexDirection: "column", borderTop: `1px solid ${S.border2}`, background: S.surf, overflow: "hidden" }}>
-
-          {/* Reply area */}
-          <div style={{ flex: 1, overflow: "auto", padding: "14px 20px" }}>
-            {loading ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14, color: S.accent2 }}>✦</span>
-                <span style={{ fontSize: 13, color: S.muted }}>考え中...</span>
-              </div>
-            ) : reply ? (
-              <div ref={replyRef}>
-                <p style={{ fontSize: 10, color: S.accent2, marginBottom: 8, letterSpacing: "0.08em", textTransform: "uppercase" }}>AI 秘書</p>
-                <p style={{ fontSize: 13, color: S.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{reply}</p>
-              </div>
-            ) : (
-              <p style={{ fontSize: 13, color: S.muted }}>AIに質問する、メモする、タスクを追加してみましょう</p>
-            )}
+        {/* Col 2-3: News */}
+        <div style={{ gridColumn: "2 / 4", gridRow: 2, background: S.bg, padding: 16 }}>
+          <SectionLabel>ニュース</SectionLabel>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {news.length > 0 ? news.slice(0, 4).map((n, i) => (
+              <a key={i} href={n.link} target="_blank" rel="noopener noreferrer"
+                style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}`, textDecoration: "none" }}>
+                <span style={{ fontSize: 20, fontWeight: 500, color: S.border2, lineHeight: 1, flexShrink: 0, width: 20 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <p style={{ fontSize: 12, color: S.text, lineHeight: 1.5 }}>{n.title}</p>
+                  {n.source && <p style={{ fontSize: 10, color: S.muted, marginTop: 4 }}>{n.source}</p>}
+                </div>
+              </a>
+            )) : <p style={{ fontSize: 13, color: S.muted, gridColumn: "1/3" }}>読み込み中...</p>}
           </div>
-
-          {/* Input bar */}
-          <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderTop: `0.5px solid ${S.border}` }}>
-            <span style={{ fontSize: 16, color: S.accent2, flexShrink: 0 }}>✦</span>
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSend()}
-              placeholder="AIに質問する、メモする、タスクを追加..."
-              style={{ flex: 1, background: S.surf2, border: `0.5px solid ${S.border2}`, borderRadius: 8, padding: "8px 14px", fontSize: 13, color: S.text, outline: "none" }}
-            />
-            <button
-              onClick={handleSend}
-              disabled={loading}
-              style={{ background: loading ? S.surf2 : S.accent, border: "none", borderRadius: 8, padding: "8px 14px", color: loading ? S.muted : "#fff", fontSize: 13, cursor: loading ? "default" : "pointer", flexShrink: 0 }}
-            >
-              ↑ 送信
-            </button>
-          </div>
-
         </div>
+
+        {/* Col 1-3: Schedule */}
+        <div style={{ gridColumn: "1 / 4", gridRow: 3, background: S.surf, padding: "14px 20px", borderTop: `1px solid ${S.border2}` }}>
+          <SectionLabel>スケジュール（直近6日）</SectionLabel>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+            {days.map((day, i) => {
+              const dow = new Date(day).getUTCDay();
+              const label = i === 0 ? "今日" : i === 1 ? "明日" : `${DAY_LABELS[dow]}曜`;
+              const dateLabel = day.slice(5).replace("-", "/");
+              const evs = eventsByDay[day] ?? [];
+              return (
+                <div key={day}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: i === 0 ? S.accent2 : S.muted, marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 10, color: S.muted, marginBottom: 6 }}>{dateLabel}</div>
+                  {scheduleLoading ? (
+                    <div style={{ fontSize: 10, color: S.border2 }}>...</div>
+                  ) : evs.length === 0 ? (
+                    <div style={{ fontSize: 11, color: S.border2 }}>—</div>
+                  ) : evs.map((ev, j) => (
+                    <div key={j} style={{ marginBottom: 4, padding: "4px 6px", background: S.surf2, borderRadius: 5, borderLeft: `2px solid ${S.accent}` }}>
+                      <div style={{ fontSize: 9, color: S.accent2, marginBottom: 1 }}>{formatEventTime(ev.start, ev.end)}</div>
+                      <div style={{ fontSize: 11, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
     </div>
   );
