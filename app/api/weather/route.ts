@@ -8,7 +8,7 @@ export async function GET() {
     const key = process.env.OPENWEATHER_API_KEY;
     const [currentRes, forecastRes] = await Promise.all([
       fetch(`https://api.openweathermap.org/data/2.5/weather?q=Osaka&appid=${key}&units=metric&lang=ja`),
-      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Osaka&appid=${key}&units=metric&lang=ja&cnt=4`),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Osaka&appid=${key}&units=metric&lang=ja&cnt=5`),
     ]);
     const [data, fdata] = await Promise.all([currentRes.json(), forecastRes.json()]);
 
@@ -20,7 +20,7 @@ export async function GET() {
     const forecast = [
       { time: "今", icon: owIcon(data.weather[0].icon), temp: Math.round(data.main.temp) },
       ...((fdata.list ?? []) as { dt: number; weather: { icon: string }[]; main: { temp: number } }[])
-        .slice(0, 4)
+        .slice(0, 5)
         .map((item) => {
           const hour = new Date(item.dt * 1000).getHours();
           return { time: `${hour}時`, icon: owIcon(item.weather[0].icon), temp: Math.round(item.main.temp) };
