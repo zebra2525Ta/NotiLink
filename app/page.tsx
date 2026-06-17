@@ -9,7 +9,7 @@ import type { ScheduleEvent } from "@/app/api/schedule/route";
 
 const SHORTCUTS = [
   { label: "Notion", desc: "ノート・DB", scheme: "notion://", fallback: "https://notion.so", icon: "/notion.png" },
-  { label: "カレンダー", desc: "予定・リマインダー", scheme: "notion://", fallback: "https://calendar.notion.so", icon: "/notioncare.webp" },
+  { label: "カレンダー", desc: "予定・リマインダー", scheme: "notion-calendar://", fallback: "https://calendar.notion.so", icon: "/notioncare.webp" },
   { label: "SmartNews", desc: "最新ニュース", scheme: "smartnews://", fallback: "https://smartnews.com", icon: "/smartnews.png" },
   { label: "SBI証券", desc: "株・ポートフォリオ", scheme: "sbisec://", fallback: "https://www.sbisec.co.jp", icon: "/sbi.webp" },
 ];
