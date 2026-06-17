@@ -193,12 +193,12 @@ export default function Home() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 12 }}>
                   {[
-                    { icon: <Droplets size={11} />, label: "湿度", value: `${weather.humidity}%` },
-                    { icon: <Wind size={11} />, label: "風速", value: `${weather.windSpeed}m/s` },
-                    { icon: <Gauge size={11} />, label: "気圧", value: `${weather.pressure}hPa` },
-                    ...(weather.rain != null ? [{ icon: <Umbrella size={11} />, label: "降水", value: `${weather.rain}mm/h` }] : []),
-                    ...(weather.sunrise ? [{ icon: <Sunrise size={11} />, label: "日の出", value: weather.sunrise }] : []),
-                    ...(weather.sunset ? [{ icon: <Sunset size={11} />, label: "日の入", value: weather.sunset }] : []),
+                    { icon: <Droplets size={11} color="#60a5fa" />, label: "湿度", value: `${weather.humidity}%` },
+                    { icon: <Wind size={11} color="#94a3b8" />, label: "風速", value: `${weather.windSpeed}m/s` },
+                    { icon: <Gauge size={11} color="#a78bfa" />, label: "気圧", value: `${weather.pressure}hPa` },
+                    ...(weather.rain != null ? [{ icon: <Umbrella size={11} color="#818cf8" />, label: "降水", value: `${weather.rain}mm/h` }] : []),
+                    ...(weather.sunrise ? [{ icon: <Sunrise size={11} color="#fb923c" />, label: "日の出", value: weather.sunrise }] : []),
+                    ...(weather.sunset ? [{ icon: <Sunset size={11} color="#f97316" />, label: "日の入", value: weather.sunset }] : []),
                   ].map((stat, i) => (
                     <div key={i} style={{ padding: "6px 8px", background: S.bg, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
                       <div style={{ fontSize: 10, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>{stat.icon}{stat.label}</div>
@@ -356,12 +356,12 @@ export default function Home() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginTop: 14 }}>
                 {[
-                  { icon: <Droplets size={12} />, label: "湿度", value: `${weather.humidity}%` },
-                  { icon: <Wind size={12} />, label: "風速", value: `${weather.windSpeed}m/s` },
-                  { icon: <Gauge size={12} />, label: "気圧", value: `${weather.pressure}hPa` },
-                  ...(weather.rain != null ? [{ icon: <Umbrella size={12} />, label: "降水", value: `${weather.rain}mm/h` }] : []),
-                  ...(weather.sunrise ? [{ icon: <Sunrise size={12} />, label: "日の出", value: weather.sunrise }] : []),
-                  ...(weather.sunset ? [{ icon: <Sunset size={12} />, label: "日の入", value: weather.sunset }] : []),
+                  { icon: <Droplets size={12} color="#60a5fa" />, label: "湿度", value: `${weather.humidity}%` },
+                  { icon: <Wind size={12} color="#94a3b8" />, label: "風速", value: `${weather.windSpeed}m/s` },
+                  { icon: <Gauge size={12} color="#a78bfa" />, label: "気圧", value: `${weather.pressure}hPa` },
+                  ...(weather.rain != null ? [{ icon: <Umbrella size={12} color="#818cf8" />, label: "降水", value: `${weather.rain}mm/h` }] : []),
+                  ...(weather.sunrise ? [{ icon: <Sunrise size={12} color="#fb923c" />, label: "日の出", value: weather.sunrise }] : []),
+                  ...(weather.sunset ? [{ icon: <Sunset size={12} color="#f97316" />, label: "日の入", value: weather.sunset }] : []),
                 ].map((stat, i) => (
                   <div key={i} style={{ padding: "6px 8px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
                     <div style={{ fontSize: 11, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>
