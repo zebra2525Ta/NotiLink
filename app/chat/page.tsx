@@ -331,7 +331,7 @@ export default function Chat() {
             <button type="button" onClick={() => fileInputRef.current?.click()}
               disabled={loading || !!confirmState || images.length >= 5}
               style={{
-                flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: `0.5px solid ${S.border2}`,
+                flexShrink: 0, width: 52, height: 52, borderRadius: 12, border: `0.5px solid ${S.border2}`,
                 background: images.length > 0 ? "rgba(99,102,241,0.15)" : S.surf2,
                 color: images.length > 0 ? S.accent2 : S.muted,
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
@@ -348,7 +348,7 @@ export default function Chat() {
               rows={1}
               disabled={!!confirmState}
               style={{
-                flex: 1, background: S.surf2, borderRadius: 12, padding: "10px 14px",
+                flex: 1, background: S.surf2, borderRadius: 12, padding: "16px 14px",
                 fontSize: 14, color: S.text, resize: "none", border: `0.5px solid ${S.border2}`,
                 outline: "none", lineHeight: 1.6, fontFamily: "inherit",
                 opacity: confirmState ? 0.5 : 1,
@@ -356,7 +356,7 @@ export default function Chat() {
             />
 
             <button type="submit" disabled={loading || !input.trim() || !!confirmState} style={{
-              flexShrink: 0, padding: "10px 18px", borderRadius: 12, border: "none",
+              flexShrink: 0, padding: "16px 18px", borderRadius: 12, border: "none",
               background: loading || !input.trim() || confirmState ? S.surf2 : S.accent,
               color: loading || !input.trim() || confirmState ? S.muted : "#fff",
               fontSize: 14, fontWeight: 600, cursor: loading || !input.trim() || confirmState ? "not-allowed" : "pointer",
