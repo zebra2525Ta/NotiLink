@@ -8,7 +8,7 @@ export type Mode = "normal" | "business" | "friend";
 const MODE_PROMPTS: Record<Mode, string> = {
   normal: "",
   business: "返答は丁寧でフォーマルなビジネス敬語にすること。",
-  friend: "返答はフランクで親しみやすいタメ口にすること。絵文字を1つ使ってよい。",
+  friend: "返答はタメ口で、友達のようにちょっとおせっかいなくらい心配したり励ましたりすること。絵文字は絶対に使わないこと。",
 };
 
 export interface IntentResult {

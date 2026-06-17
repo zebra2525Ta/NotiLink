@@ -15,11 +15,6 @@ const S = {
   accent: "#6366f1", accent2: "#818cf8",
 };
 
-const MODES: { value: Mode; label: string }[] = [
-  { value: "normal", label: "通常" },
-  { value: "business", label: "ビジネス" },
-  { value: "friend", label: "友達" },
-];
 
 interface ImageAttachment {
   base64: string;
@@ -36,7 +31,7 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [reply, setReply] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<Mode>("normal");
+  const mode: Mode = "friend";
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
@@ -300,18 +295,7 @@ export default function Chat() {
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 4 }}>
-          {MODES.map((m) => (
-            <button key={m.value} onClick={() => setMode(m.value)} style={{
-              padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 500, cursor: "pointer", border: "none",
-              background: mode === m.value ? S.accent : S.surf2,
-              color: mode === m.value ? "#fff" : S.muted,
-              transition: "background 0.15s",
-            }}>
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <div />
       </header>
 
       {/* ── 中央エリア ── */}
