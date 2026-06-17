@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { redis } from "@/lib/push";
+
+const CACHE_KEY = "stocks:top5";
+const CACHE_TTL = 3600; // 1時間
 
 // ニッケイ主要銘柄プール（上昇率ランキングの母集団）
 const STOCK_POOL = [
@@ -73,6 +77,12 @@ export async function GET() {
     return NextResponse.json({ message: "ログインが必要です" }, { status: 401 });
   }
 
+  // キャッシュがあれば即返す
+  const cached = await redis.get(CACHE_KEY);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   const apiKey = process.env.JQUANTS_REFRESH_TOKEN ?? "";
 
   // 5件ずつ並列取得してレート制限を回避
@@ -95,6 +105,10 @@ export async function GET() {
     .sort((a, b) => b.rawChangePercent - a.rawChangePercent)
     .slice(0, 5)
     .map(({ rawChangePercent: _, ...rest }) => rest);
+
+  if (top5.length > 0) {
+    await redis.set(CACHE_KEY, top5, { ex: CACHE_TTL });
+  }
 
   return NextResponse.json(top5);
 }
