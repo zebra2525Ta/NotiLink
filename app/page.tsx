@@ -15,8 +15,7 @@ const SHORTCUTS = [
 ];
 
 function openApp(scheme: string, fallback: string) {
-  window.location.href = scheme;
-  setTimeout(() => { window.location.href = fallback; }, 1000);
+  window.location.href = scheme.startsWith("http") ? fallback : scheme;
 }
 
 function Sparkline({ positive }: { positive: boolean }) {
