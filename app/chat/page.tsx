@@ -300,7 +300,7 @@ export default function Chat() {
       </header>
 
       {/* ── 中央エリア ── */}
-      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "24px 16px 80px", overflowY: "auto" }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "24px 16px 160px", overflowY: "auto" }}>
         {centerContent()}
       </div>
 
@@ -366,7 +366,7 @@ export default function Chat() {
           </div>
         </form>
       ) : (
-        <div style={{ flexShrink: 0, padding: "12px 14px 24px", borderTop: `0.5px solid ${S.border}`, background: S.surf }}>
+        <div style={{ flexShrink: 0, padding: "12px 14px 48px", borderTop: `0.5px solid ${S.border}`, background: S.surf }}>
           <button
             onClick={() => { setShowInput(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
             style={{ width: "100%", padding: "11px", borderRadius: 12, border: `0.5px solid ${S.border2}`, background: S.surf2, color: S.muted, fontSize: 14, cursor: "pointer", textAlign: "left" }}
