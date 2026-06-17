@@ -212,26 +212,33 @@ export default function Home() {
             ) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
           </section>
 
-          {/* ── ショートカット ── */}
-          <section style={{ background: S.surf, borderRadius: 14, padding: "12px 12px", border: `0.5px solid ${S.border}` }}>
-            <SectionLabel>ショートカット</SectionLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 8 }}>
-              {SHORTCUTS.map(s => (
-                <ShortcutTile key={s.label} icon={s.icon} label={s.label} onClick={() => openApp(s.scheme, s.fallback)} />
-              ))}
+          {/* ── スケジュール ── */}
+          <section style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}` }}>
+            <SectionLabel>スケジュール（直近7日）</SectionLabel>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              {days.map((day, i) => {
+                const dow = new Date(day).getUTCDay();
+                const label = i === 0 ? "今日" : i === 1 ? "明日" : `${DAY_LABELS[dow]}曜`;
+                const dateLabel = day.slice(5).replace("-", "/");
+                const evs = eventsByDay[day] ?? [];
+                return (
+                  <div key={day} style={{ flex: "0 0 auto", minWidth: 100, background: S.bg, borderRadius: 10, border: `0.5px solid ${i === 0 ? "rgba(99,102,241,0.3)" : S.border}`, padding: "10px 10px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: i === 0 ? S.accent2 : S.muted }}>{label}</div>
+                    <div style={{ fontSize: 11, color: S.muted, marginBottom: 6 }}>{dateLabel}</div>
+                    {scheduleLoading ? (
+                      <div style={{ fontSize: 10, color: S.border2 }}>...</div>
+                    ) : evs.length === 0 ? (
+                      <div style={{ fontSize: 11, color: S.border2 }}>—</div>
+                    ) : evs.map((ev, j) => (
+                      <div key={j} style={{ marginBottom: 4, padding: "4px 6px", background: S.surf, borderRadius: 5, borderLeft: `2px solid ${S.accent}` }}>
+                        <div style={{ fontSize: 10, color: S.accent2, marginBottom: 1 }}>{formatEventTime(ev.start, ev.end)}</div>
+                        <div style={{ fontSize: 11, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
-            <button
-              onClick={() => router.push("/chat")}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, background: "rgba(99,102,241,0.12)", border: `0.5px solid rgba(99,102,241,0.3)`, color: S.accent2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-            >
-              <span>✦</span> Naviに話しかける
-            </button>
-            <button
-              onClick={() => signOut()}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, background: "transparent", border: `0.5px solid ${S.border}`, color: S.muted, fontSize: 12, cursor: "pointer" }}
-            >
-              ログアウト
-            </button>
           </section>
 
           {/* ── 注目銘柄 ── */}
@@ -271,33 +278,26 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ── スケジュール ── */}
-          <section style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}` }}>
-            <SectionLabel>スケジュール（直近7日）</SectionLabel>
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-              {days.map((day, i) => {
-                const dow = new Date(day).getUTCDay();
-                const label = i === 0 ? "今日" : i === 1 ? "明日" : `${DAY_LABELS[dow]}曜`;
-                const dateLabel = day.slice(5).replace("-", "/");
-                const evs = eventsByDay[day] ?? [];
-                return (
-                  <div key={day} style={{ flex: "0 0 auto", minWidth: 100, background: S.bg, borderRadius: 10, border: `0.5px solid ${i === 0 ? "rgba(99,102,241,0.3)" : S.border}`, padding: "10px 10px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: i === 0 ? S.accent2 : S.muted }}>{label}</div>
-                    <div style={{ fontSize: 11, color: S.muted, marginBottom: 6 }}>{dateLabel}</div>
-                    {scheduleLoading ? (
-                      <div style={{ fontSize: 10, color: S.border2 }}>...</div>
-                    ) : evs.length === 0 ? (
-                      <div style={{ fontSize: 11, color: S.border2 }}>—</div>
-                    ) : evs.map((ev, j) => (
-                      <div key={j} style={{ marginBottom: 4, padding: "4px 6px", background: S.surf, borderRadius: 5, borderLeft: `2px solid ${S.accent}` }}>
-                        <div style={{ fontSize: 10, color: S.accent2, marginBottom: 1 }}>{formatEventTime(ev.start, ev.end)}</div>
-                        <div style={{ fontSize: 11, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
+          {/* ── ショートカット ── */}
+          <section style={{ background: S.surf, borderRadius: 14, padding: "12px 12px", border: `0.5px solid ${S.border}` }}>
+            <SectionLabel>ショートカット</SectionLabel>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 8 }}>
+              {SHORTCUTS.map(s => (
+                <ShortcutTile key={s.label} icon={s.icon} label={s.label} onClick={() => openApp(s.scheme, s.fallback)} />
+              ))}
             </div>
+            <button
+              onClick={() => router.push("/chat")}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, background: "rgba(99,102,241,0.12)", border: `0.5px solid rgba(99,102,241,0.3)`, color: S.accent2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            >
+              <span>✦</span> Naviに話しかける
+            </button>
+            <button
+              onClick={() => signOut()}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, background: "transparent", border: `0.5px solid ${S.border}`, color: S.muted, fontSize: 12, cursor: "pointer" }}
+            >
+              ログアウト
+            </button>
           </section>
 
         </div>
