@@ -17,8 +17,6 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 export default function PushSetup() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [show, setShow] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
@@ -26,7 +24,6 @@ export default function PushSetup() {
     const perm = Notification.permission;
     setPermission(perm);
     if (perm === "granted") {
-      // 許可済みの場合、サブスクリプションをRedisに再登録（未保存対策）
       subscribe();
     } else if (perm === "default") {
       const t = setTimeout(() => setShow(true), 3000);
@@ -60,48 +57,7 @@ export default function PushSetup() {
     else setShow(false);
   }
 
-  async function sendTest() {
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const res = await fetch("/api/push/test", { method: "POST" });
-      const data = await res.json();
-      if (data.ok) {
-        setTestResult("✓ 送信しました");
-      } else {
-        setTestResult("✗ " + (data.error ?? JSON.stringify(data)));
-      }
-    } catch (e) {
-      setTestResult("✗ " + String(e));
-    }
-    setTesting(false);
-  }
-
-  if (permission === "granted") {
-    return (
-      <div style={{
-        position: "fixed", bottom: 20, right: 16, zIndex: 9999,
-        display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6,
-      }}>
-        {testResult && (
-          <p style={{ fontSize: 11, color: testResult.startsWith("✓") ? "#10b981" : "#f43f5e", margin: 0, background: "#1a1e2a", padding: "4px 10px", borderRadius: 6 }}>
-            {testResult}
-          </p>
-        )}
-        <button
-          onClick={sendTest}
-          disabled={testing}
-          style={{
-            background: "#1a1e2a", border: "0.5px solid rgba(99,102,241,0.4)",
-            borderRadius: 10, padding: "8px 14px", fontSize: 12, color: "#9ca3af",
-            cursor: "pointer",
-          }}
-        >
-          {testing ? "送信中..." : "通知テスト"}
-        </button>
-      </div>
-    );
-  }
+  if (permission === "granted") return null;
 
   if (!show || permission !== "default") return null;
 
@@ -117,7 +73,7 @@ export default function PushSetup() {
           Naviからの通知を受け取る
         </p>
         <p style={{ fontSize: 12, color: "#9ca3af", margin: "4px 0 0" }}>
-          1日10件、天気・予定・ニュースをお届けします
+          天気・予定・買い物をお届けします
         </p>
       </div>
       <button
