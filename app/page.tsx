@@ -298,7 +298,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 14px 28px", background: S.bg, borderTop: `0.5px solid ${S.border}`, zIndex: 50, display: "flex", justifyContent: "center" }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "30px 14px", background: S.bg, borderTop: `0.5px solid ${S.border}`, zIndex: 50, display: "flex", justifyContent: "center" }}>
         <button
           onClick={() => router.push("/chat")}
           style={{ width: "100%", maxWidth: 520, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "13px", borderRadius: 12, background: "rgba(99,102,241,0.12)", border: `0.5px solid rgba(99,102,241,0.3)`, color: S.accent2, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
