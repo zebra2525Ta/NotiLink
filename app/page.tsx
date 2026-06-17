@@ -157,7 +157,7 @@ export default function Home() {
       <div style={{ minHeight: "100vh", background: S.bg, color: S.text, fontFamily: "var(--font-mplus), system-ui, sans-serif", paddingBottom: 24 }}>
 
         {/* ── Topbar ── */}
-        <header style={{ position: "sticky", top: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
+        <header style={{ position: "sticky", top: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <NotiLinkLogo size={18} bg={S.surf} />
             <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.05em" }}>NotiLink</span>
@@ -312,7 +312,7 @@ export default function Home() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: S.bg, color: S.text, fontFamily: "var(--font-mplus), system-ui, sans-serif", overflow: "hidden" }}>
 
-      <header style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 20px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
+      <header style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 20px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <NotiLinkLogo size={20} bg={S.surf} />
           <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "0.05em" }}>NotiLink</span>
