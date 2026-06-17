@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { Droplets, Wind, Gauge, Umbrella, Sunrise, Sunset } from "lucide-react";
 import NotiLinkLogo from "@/app/components/NotiLinkLogo";
 import type { ScheduleEvent } from "@/app/api/schedule/route";
@@ -226,6 +227,12 @@ export default function Home() {
             >
               <span>✦</span> Naviに話しかける
             </button>
+            <button
+              onClick={() => signOut()}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, background: "transparent", border: `0.5px solid ${S.border}`, color: S.muted, fontSize: 12, cursor: "pointer" }}
+            >
+              ログアウト
+            </button>
           </section>
 
           {/* ── 注目銘柄 ── */}
@@ -324,6 +331,7 @@ export default function Home() {
           <div style={{ height: 0.5, background: S.border, margin: "12px 0" }} />
           <SectionLabel>クイックアクション</SectionLabel>
           <ShortcutRow label="Navi" desc="メモ登録・検索" onClick={() => router.push("/chat")} />
+          <ShortcutRow label="ログアウト" desc="" onClick={() => signOut()} />
         </div>
 
         <div style={{ gridColumn: 2, gridRow: 1, background: S.bg, padding: 16 }}>
