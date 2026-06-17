@@ -146,6 +146,7 @@ export default function Home() {
 
   if (isMobile) {
     return (
+      <>
       <div style={{ minHeight: "100vh", background: S.bg, color: S.text, fontFamily: "var(--font-mplus), system-ui, sans-serif", paddingBottom: 80 }}>
 
         {/* ── Topbar ── */}
@@ -297,7 +298,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── 固定Naviボタン ── */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 14px", background: S.bg, borderTop: `0.5px solid ${S.border}`, zIndex: 50 }}>
         <button
           onClick={() => router.push("/chat")}
@@ -306,6 +306,7 @@ export default function Home() {
           <span>✦</span> Naviに話しかける
         </button>
       </div>
+    </>
     );
   }
 
