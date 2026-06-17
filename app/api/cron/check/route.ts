@@ -21,6 +21,11 @@ export async function GET(req: Request) {
   const toSend = schedule.filter(n => !n.sent && n.time <= jstTime);
   let sent = 0;
 
+  const sub = await redis.get("push:subscription");
+  if (!sub) {
+    return NextResponse.json({ ok: true, sent: 0, reason: "no subscription" });
+  }
+
   for (const n of toSend) {
     try {
       await sendPush({ title: n.title, body: n.body, url: n.url });

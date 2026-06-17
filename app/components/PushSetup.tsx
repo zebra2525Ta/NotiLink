@@ -20,6 +20,7 @@ export default function PushSetup() {
 
   useEffect(() => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => null);
     const perm = Notification.permission;
     setPermission(perm);
     // 未決定の場合のみバナーを表示（少し遅延してスプラッシュ後）

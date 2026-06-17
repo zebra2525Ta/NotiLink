@@ -55,7 +55,7 @@ export async function GET(req: Request) {
       ? stocks.map((s: {name:string;changePercent:string;positive:boolean}) => `${s.name}: ${s.positive ? "▲" : "▼"}${s.changePercent}%`).join(", ")
       : "株価情報なし";
 
-    const prompt = `あなたはAI秘書Naviです。今日1日のプッシュ通知スケジュールを10件作成してください。
+    const prompt = `あなたはAI秘書Naviです。今日1日のプッシュ通知スケジュールを1時間ごとに作成してください。
 
 【今日の日付】${jstDate}${holidayName ? `（${holidayName}・祝日）` : ""}
 【天気】${weatherSummary}
@@ -64,15 +64,10 @@ ${newsSummary}
 【注目銘柄】${stockSummary}
 
 【通知枠（JST）】
-- 08:00, 09:30（朝）
-- 10:30, 11:30（午前）
-- 12:00（昼）
-- 14:00（午後）
-- 18:00, 19:30（夕方）
-- 21:00, 23:00（夜）
+08:00, 09:00, 10:00, 11:00, 12:00, 13:00, 14:00, 15:00, 16:00, 17:00, 18:00, 19:00, 20:00, 21:00, 22:00, 23:00
 
 ルール:
-- 上記の時間枠を使って10件ちょうど作成する
+- 上記の時間枠を使って16件ちょうど作成する（1時間ごと）
 - 通知はNotionを開くきっかけになる内容にする
 - 天気・ニュース・株価を自然に絡める
 - 祝日の場合はそれに触れる
@@ -80,7 +75,7 @@ ${newsSummary}
 - JSONのみ返す・前置き不要
 
 返答形式:
-{"notifications":[{"time":"08:00","title":"タイトル","body":"本文","url":"/"},{"time":"09:30",...},... (10件)]}`;
+{"notifications":[{"time":"08:00","title":"タイトル","body":"本文","url":"/"},{"time":"09:00",...},... (16件)]}`;
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
