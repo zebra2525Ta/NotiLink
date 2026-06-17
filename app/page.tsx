@@ -108,7 +108,6 @@ export default function Home() {
   const [weather, setWeather] = useState<Weather | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
-  const [time, setTime] = useState("");
   const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -131,14 +130,6 @@ export default function Home() {
       .catch(() => {})
       .finally(() => setScheduleLoading(false));
 
-    const tick = () => {
-      const d = new Date();
-      const p = (n: number) => String(n).padStart(2, "0");
-      setTime(`${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
   }, []);
 
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -165,7 +156,6 @@ export default function Home() {
             <span style={{ fontSize: 10, padding: "2px 7px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>Navi</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: S.muted, fontVariantNumeric: "tabular-nums" }}>{time.slice(11)}</span>
             <div style={{ width: 6, height: 6, background: "#10b981", borderRadius: "50%" }} />
           </div>
         </header>
@@ -320,7 +310,6 @@ export default function Home() {
           <span style={{ fontSize: 11, padding: "2px 8px", background: "rgba(99,102,241,0.15)", color: S.accent2, borderRadius: 20, border: `0.5px solid rgba(99,102,241,0.3)` }}>Navi</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 13, color: S.muted, fontVariantNumeric: "tabular-nums" }}>{time}</span>
           <div style={{ width: 6, height: 6, background: "#10b981", borderRadius: "50%", boxShadow: "0 0 0 2px rgba(16,185,129,0.2)" }} />
         </div>
       </header>
