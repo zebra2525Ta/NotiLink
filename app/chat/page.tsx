@@ -287,11 +287,10 @@ export default function Chat() {
 
       {/* ── ヘッダー ── */}
       <header style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
-        <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", padding: "4px 6px", display: "flex", alignItems: "center" }}>
-          <ChevronLeft size={22} />
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", padding: "4px 4px", display: "flex", alignItems: "center" }}>
+            <ChevronLeft size={22} />
+          </button>
           <NotiLinkLogo size={16} bg={S.surf} />
           <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.05em" }}>Navi</span>
           {!isOnline && (
