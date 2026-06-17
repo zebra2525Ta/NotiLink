@@ -36,6 +36,7 @@ export default function Chat() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [showInput, setShowInput] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -92,6 +93,8 @@ export default function Chat() {
     setLoading(true);
     setReply(null);
 
+    setShowInput(false);
+
     if (!navigator.onLine) {
       await enqueue({ text: input, mode, timestamp: Date.now() });
       const items = await getPending();
@@ -100,7 +103,6 @@ export default function Chat() {
       setInput("");
       clearImages();
       setLoading(false);
-      textareaRef.current?.focus();
       return;
     }
 
@@ -129,7 +131,6 @@ export default function Chat() {
       setReply("通信エラーが発生しました。もう一度試してください。");
     } finally {
       setLoading(false);
-      textareaRef.current?.focus();
     }
   }
 
@@ -304,65 +305,76 @@ export default function Chat() {
       </div>
 
       {/* ── 入力フォーム ── */}
-      <form onSubmit={handleSubmit} style={{ flexShrink: 0, padding: "12px 14px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", flexDirection: "column", gap: 10 }}>
+      {showInput ? (
+        <form onSubmit={handleSubmit} style={{ flexShrink: 0, padding: "12px 14px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", flexDirection: "column", gap: 10 }}>
 
-        {images.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {images.map((img, i) => (
-              <div key={i} style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.previewUrl} alt={`添付${i + 1}`} style={{ width: 52, height: 52, objectFit: "cover", borderRadius: 10, border: `0.5px solid ${S.border2}` }} />
-                <button type="button" onClick={() => removeImage(i)} style={{
-                  position: "absolute", top: -6, right: -6, width: 18, height: 18,
-                  background: S.surf2, border: `0.5px solid ${S.border2}`, borderRadius: "50%",
-                  fontSize: 10, color: S.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                }}>✕</button>
-              </div>
-            ))}
-            <p style={{ fontSize: 11, color: S.muted }}>指示を入力して送信<br /><span style={{ color: S.border2 }}>最大5枚</span></p>
-          </div>
-        )}
+          {images.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {images.map((img, i) => (
+                <div key={i} style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.previewUrl} alt={`添付${i + 1}`} style={{ width: 52, height: 52, objectFit: "cover", borderRadius: 10, border: `0.5px solid ${S.border2}` }} />
+                  <button type="button" onClick={() => removeImage(i)} style={{
+                    position: "absolute", top: -6, right: -6, width: 18, height: 18,
+                    background: S.surf2, border: `0.5px solid ${S.border2}`, borderRadius: "50%",
+                    fontSize: 10, color: S.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>✕</button>
+                </div>
+              ))}
+              <p style={{ fontSize: 11, color: S.muted }}>指示を入力して送信<br /><span style={{ color: S.border2 }}>最大5枚</span></p>
+            </div>
+          )}
 
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-          <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleImageChange} />
-          <button type="button" onClick={() => fileInputRef.current?.click()}
-            disabled={loading || !!confirmState || images.length >= 5}
-            style={{
-              flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: `0.5px solid ${S.border2}`,
-              background: images.length > 0 ? "rgba(99,102,241,0.15)" : S.surf2,
-              color: images.length > 0 ? S.accent2 : S.muted,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleImageChange} />
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              disabled={loading || !!confirmState || images.length >= 5}
+              style={{
+                flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: `0.5px solid ${S.border2}`,
+                background: images.length > 0 ? "rgba(99,102,241,0.15)" : S.surf2,
+                color: images.length > 0 ? S.accent2 : S.muted,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+              <Camera size={18} />
+            </button>
+
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={images.length > 0 ? "指示を入力（例：田中のシフトだけ登録して）" : "殴り書きOK（Enter で送信）"}
+              rows={1}
+              disabled={!!confirmState}
+              style={{
+                flex: 1, background: S.surf2, borderRadius: 12, padding: "10px 14px",
+                fontSize: 14, color: S.text, resize: "none", border: `0.5px solid ${S.border2}`,
+                outline: "none", lineHeight: 1.6, fontFamily: "inherit",
+                opacity: confirmState ? 0.5 : 1,
+              }}
+            />
+
+            <button type="submit" disabled={loading || !input.trim() || !!confirmState} style={{
+              flexShrink: 0, padding: "10px 18px", borderRadius: 12, border: "none",
+              background: loading || !input.trim() || confirmState ? S.surf2 : S.accent,
+              color: loading || !input.trim() || confirmState ? S.muted : "#fff",
+              fontSize: 14, fontWeight: 600, cursor: loading || !input.trim() || confirmState ? "not-allowed" : "pointer",
+              transition: "background 0.15s",
             }}>
-            <Camera size={18} />
-          </button>
-
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={images.length > 0 ? "指示を入力（例：田中のシフトだけ登録して）" : "殴り書きOK（Enter で送信）"}
-            rows={1}
-            disabled={!!confirmState}
-            style={{
-              flex: 1, background: S.surf2, borderRadius: 12, padding: "10px 14px",
-              fontSize: 14, color: S.text, resize: "none", border: `0.5px solid ${S.border2}`,
-              outline: "none", lineHeight: 1.6, fontFamily: "inherit",
-              opacity: confirmState ? 0.5 : 1,
-            }}
-          />
-
-          <button type="submit" disabled={loading || !input.trim() || !!confirmState} style={{
-            flexShrink: 0, padding: "10px 18px", borderRadius: 12, border: "none",
-            background: loading || !input.trim() || confirmState ? S.surf2 : S.accent,
-            color: loading || !input.trim() || confirmState ? S.muted : "#fff",
-            fontSize: 14, fontWeight: 600, cursor: loading || !input.trim() || confirmState ? "not-allowed" : "pointer",
-            transition: "background 0.15s",
-          }}>
-            {isOnline ? "送信" : "保存"}
+              {isOnline ? "送信" : "保存"}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div style={{ flexShrink: 0, padding: "12px 14px", borderTop: `0.5px solid ${S.border}`, background: S.surf }}>
+          <button
+            onClick={() => { setShowInput(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
+            style={{ width: "100%", padding: "11px", borderRadius: 12, border: `0.5px solid ${S.border2}`, background: S.surf2, color: S.muted, fontSize: 14, cursor: "pointer", textAlign: "left" }}
+          >
+            返信する...
           </button>
         </div>
-      </form>
+      )}
 
       <style>{`
         @keyframes bounce {
