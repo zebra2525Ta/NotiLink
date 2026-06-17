@@ -368,7 +368,7 @@ export default function Chat() {
           </div>
         </form>
       ) : (
-        <div style={{ flexShrink: 0, padding: "12px 14px 48px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", justifyContent: "center" }}>
+        <div style={{ flexShrink: 0, padding: "30px 14px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", justifyContent: "center" }}>
           <button
             onClick={() => { setShowInput(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
             style={{ width: "100%", maxWidth: 520, padding: "11px", borderRadius: 12, border: `0.5px solid ${S.border2}`, background: S.surf2, color: S.muted, fontSize: 14, cursor: "pointer", textAlign: "left" }}
