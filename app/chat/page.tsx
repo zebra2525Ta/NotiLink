@@ -217,7 +217,7 @@ export default function Chat() {
 
     if (confirmState) {
       return (
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 12 }}>
           <p style={{ fontSize: 12, color: S.muted, marginBottom: 4 }}>
             「{confirmState.dbTitle}」に {confirmState.pendingPages.length}件 登録します
           </p>
@@ -257,7 +257,7 @@ export default function Chat() {
     if (reply) {
       return (
         <div style={{
-          width: "100%", maxWidth: 400,
+          width: "100%", maxWidth: 520,
           background: S.surf, borderRadius: 16, padding: "16px 18px",
           border: `0.5px solid ${S.border2}`, fontSize: 14, color: S.text, lineHeight: 1.7,
           boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
@@ -307,7 +307,7 @@ export default function Chat() {
       {/* ── 入力フォーム ── */}
       {showInput ? (
         <form onSubmit={handleSubmit} style={{ flexShrink: 0, padding: "30px 14px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", flexDirection: "column", gap: 10, alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 10 }}>
 
           {images.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -371,7 +371,7 @@ export default function Chat() {
         <div style={{ flexShrink: 0, padding: "12px 14px 48px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", justifyContent: "center" }}>
           <button
             onClick={() => { setShowInput(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
-            style={{ width: "100%", maxWidth: 400, padding: "11px", borderRadius: 12, border: `0.5px solid ${S.border2}`, background: S.surf2, color: S.muted, fontSize: 14, cursor: "pointer", textAlign: "left" }}
+            style={{ width: "100%", maxWidth: 520, padding: "11px", borderRadius: 12, border: `0.5px solid ${S.border2}`, background: S.surf2, color: S.muted, fontSize: 14, cursor: "pointer", textAlign: "left" }}
           >
             返信する...
           </button>
