@@ -17,6 +17,7 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 export default function PushSetup() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [show, setShow] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
@@ -54,6 +55,29 @@ export default function PushSetup() {
     setPermission(result);
     if (result === "granted") await subscribe();
     else setShow(false);
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    await fetch("/api/push/test", { method: "POST" }).catch(() => null);
+    setTesting(false);
+  }
+
+  if (permission === "granted") {
+    return (
+      <button
+        onClick={sendTest}
+        disabled={testing}
+        style={{
+          position: "fixed", bottom: 20, right: 16, zIndex: 9999,
+          background: "#1a1e2a", border: "0.5px solid rgba(99,102,241,0.4)",
+          borderRadius: 10, padding: "8px 14px", fontSize: 12, color: "#9ca3af",
+          cursor: "pointer",
+        }}
+      >
+        {testing ? "送信中..." : "通知テスト"}
+      </button>
+    );
   }
 
   if (!show || permission !== "default") return null;
