@@ -306,7 +306,7 @@ export default function Chat() {
 
       {/* ── 入力フォーム ── */}
       {showInput ? (
-        <form onSubmit={handleSubmit} style={{ flexShrink: 0, padding: "12px 14px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+        <form onSubmit={handleSubmit} style={{ flexShrink: 0, padding: "12px 14px 48px", borderTop: `0.5px solid ${S.border}`, background: S.surf, display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
           <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 10 }}>
 
           {images.length > 0 && (
