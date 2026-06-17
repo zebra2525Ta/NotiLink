@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Droplets, Wind, Gauge, Umbrella, Sunrise, Sunset } from "lucide-react";
 import NotiLinkLogo from "@/app/components/NotiLinkLogo";
 import type { ScheduleEvent } from "@/app/api/schedule/route";
 
@@ -192,15 +193,15 @@ export default function Home() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 12 }}>
                   {[
-                    { icon: "💧", label: "湿度", value: `${weather.humidity}%` },
-                    { icon: "🌬️", label: "風速", value: `${weather.windSpeed}m/s` },
-                    { icon: "📊", label: "気圧", value: `${weather.pressure}hPa` },
-                    ...(weather.rain != null ? [{ icon: "☔", label: "降水", value: `${weather.rain}mm/h` }] : []),
-                    ...(weather.sunrise ? [{ icon: "🌅", label: "日の出", value: weather.sunrise }] : []),
-                    ...(weather.sunset ? [{ icon: "🌇", label: "日の入", value: weather.sunset }] : []),
+                    { icon: <Droplets size={11} />, label: "湿度", value: `${weather.humidity}%` },
+                    { icon: <Wind size={11} />, label: "風速", value: `${weather.windSpeed}m/s` },
+                    { icon: <Gauge size={11} />, label: "気圧", value: `${weather.pressure}hPa` },
+                    ...(weather.rain != null ? [{ icon: <Umbrella size={11} />, label: "降水", value: `${weather.rain}mm/h` }] : []),
+                    ...(weather.sunrise ? [{ icon: <Sunrise size={11} />, label: "日の出", value: weather.sunrise }] : []),
+                    ...(weather.sunset ? [{ icon: <Sunset size={11} />, label: "日の入", value: weather.sunset }] : []),
                   ].map((stat, i) => (
                     <div key={i} style={{ padding: "6px 8px", background: S.bg, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
-                      <div style={{ fontSize: 10, color: S.muted }}>{stat.icon} {stat.label}</div>
+                      <div style={{ fontSize: 10, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>{stat.icon}{stat.label}</div>
                       <div style={{ fontSize: 13, fontWeight: 500, marginTop: 2 }}>{stat.value}</div>
                     </div>
                   ))}
@@ -355,16 +356,16 @@ export default function Home() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginTop: 14 }}>
                 {[
-                  { icon: "💧", label: "湿度", value: `${weather.humidity}%` },
-                  { icon: "🌬️", label: "風速", value: `${weather.windSpeed}m/s` },
-                  { icon: "📊", label: "気圧", value: `${weather.pressure}hPa` },
-                  ...(weather.rain != null ? [{ icon: "☔", label: "降水", value: `${weather.rain}mm/h` }] : []),
-                  ...(weather.sunrise ? [{ icon: "🌅", label: "日の出", value: weather.sunrise }] : []),
-                  ...(weather.sunset ? [{ icon: "🌇", label: "日の入", value: weather.sunset }] : []),
+                  { icon: <Droplets size={12} />, label: "湿度", value: `${weather.humidity}%` },
+                  { icon: <Wind size={12} />, label: "風速", value: `${weather.windSpeed}m/s` },
+                  { icon: <Gauge size={12} />, label: "気圧", value: `${weather.pressure}hPa` },
+                  ...(weather.rain != null ? [{ icon: <Umbrella size={12} />, label: "降水", value: `${weather.rain}mm/h` }] : []),
+                  ...(weather.sunrise ? [{ icon: <Sunrise size={12} />, label: "日の出", value: weather.sunrise }] : []),
+                  ...(weather.sunset ? [{ icon: <Sunset size={12} />, label: "日の入", value: weather.sunset }] : []),
                 ].map((stat, i) => (
                   <div key={i} style={{ padding: "6px 8px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
                     <div style={{ fontSize: 11, color: S.muted, display: "flex", alignItems: "center", gap: 3 }}>
-                      <span style={{ fontSize: 12 }}>{stat.icon}</span>{stat.label}
+                      {stat.icon}{stat.label}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: S.text, marginTop: 2 }}>{stat.value}</div>
                   </div>
