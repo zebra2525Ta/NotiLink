@@ -25,8 +25,10 @@ export default function PushSetup() {
     navigator.serviceWorker.register("/sw.js").catch(() => null);
     const perm = Notification.permission;
     setPermission(perm);
-    // 未決定の場合のみバナーを表示（少し遅延してスプラッシュ後）
-    if (perm === "default") {
+    if (perm === "granted") {
+      // 許可済みの場合、サブスクリプションをRedisに再登録（未保存対策）
+      subscribe();
+    } else if (perm === "default") {
       const t = setTimeout(() => setShow(true), 3000);
       return () => clearTimeout(t);
     }
