@@ -230,7 +230,7 @@ export default function Chat() {
               const [title, date] = p.previewLabel.split("  |  ");
               return (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: S.surf2, borderRadius: 12, padding: "12px 14px", border: `0.5px solid ${S.border2}` }}>
-                  <div style={{ width: 2, alignSelf: "stretch", background: S.accent, borderRadius: 2, flexShrink: 0 }} />
+                  <div style={{ width: 1, alignSelf: "stretch", background: S.accent, borderRadius: 2, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 500, color: S.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</p>
                     {date && <p style={{ fontSize: 12, color: S.muted, margin: "3px 0 0" }}>{date}</p>}
@@ -359,7 +359,7 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={images.length > 0 ? "指示を入力（例：田中のシフトだけ登録して）" : "殴り書きOK（Enter で送信）"}
-            rows={2}
+            rows={1}
             disabled={!!confirmState}
             style={{
               flex: 1, background: S.surf2, borderRadius: 12, padding: "10px 14px",
