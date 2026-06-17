@@ -300,7 +300,7 @@ export default function Chat() {
       </header>
 
       {/* ── 中央エリア ── */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px", overflowY: "auto" }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "24px 16px 32px", overflowY: "auto" }}>
         {centerContent()}
       </div>
 
