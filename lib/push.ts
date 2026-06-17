@@ -13,6 +13,7 @@ webPush.setVapidDetails(
 );
 
 export const SUBSCRIPTION_KEY = "push:subscription";
+export const TOKEN_KEY = "push:token";
 
 export type PushPayload = {
   title: string;
