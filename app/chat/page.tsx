@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft, Camera } from "lucide-react";
 import NotiLinkLogo from "@/app/components/NotiLinkLogo";
 import type { Mode } from "@/lib/groq";
 import type { PendingPage } from "@/app/api/memo/route";
@@ -286,8 +287,8 @@ export default function Chat() {
 
       {/* ── ヘッダー ── */}
       <header style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `0.5px solid ${S.border}`, background: S.surf }}>
-        <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: S.muted, fontSize: 18, cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}>
-          ←
+        <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", padding: "4px 6px", display: "flex", alignItems: "center" }}>
+          <ChevronLeft size={22} />
         </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -347,9 +348,9 @@ export default function Chat() {
               flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: `0.5px solid ${S.border2}`,
               background: images.length > 0 ? "rgba(99,102,241,0.15)" : S.surf2,
               color: images.length > 0 ? S.accent2 : S.muted,
-              fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-            📷
+            <Camera size={18} />
           </button>
 
           <textarea
