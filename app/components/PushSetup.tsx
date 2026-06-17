@@ -18,6 +18,7 @@ export default function PushSetup() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [show, setShow] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
@@ -59,24 +60,44 @@ export default function PushSetup() {
 
   async function sendTest() {
     setTesting(true);
-    await fetch("/api/push/test", { method: "POST" }).catch(() => null);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/push/test", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        setTestResult("✓ 送信しました");
+      } else {
+        setTestResult("✗ " + (data.error ?? JSON.stringify(data)));
+      }
+    } catch (e) {
+      setTestResult("✗ " + String(e));
+    }
     setTesting(false);
   }
 
   if (permission === "granted") {
     return (
-      <button
-        onClick={sendTest}
-        disabled={testing}
-        style={{
-          position: "fixed", bottom: 20, right: 16, zIndex: 9999,
-          background: "#1a1e2a", border: "0.5px solid rgba(99,102,241,0.4)",
-          borderRadius: 10, padding: "8px 14px", fontSize: 12, color: "#9ca3af",
-          cursor: "pointer",
-        }}
-      >
-        {testing ? "送信中..." : "通知テスト"}
-      </button>
+      <div style={{
+        position: "fixed", bottom: 20, right: 16, zIndex: 9999,
+        display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6,
+      }}>
+        {testResult && (
+          <p style={{ fontSize: 11, color: testResult.startsWith("✓") ? "#10b981" : "#f43f5e", margin: 0, background: "#1a1e2a", padding: "4px 10px", borderRadius: 6 }}>
+            {testResult}
+          </p>
+        )}
+        <button
+          onClick={sendTest}
+          disabled={testing}
+          style={{
+            background: "#1a1e2a", border: "0.5px solid rgba(99,102,241,0.4)",
+            borderRadius: 10, padding: "8px 14px", fontSize: 12, color: "#9ca3af",
+            cursor: "pointer",
+          }}
+        >
+          {testing ? "送信中..." : "通知テスト"}
+        </button>
+      </div>
     );
   }
 
