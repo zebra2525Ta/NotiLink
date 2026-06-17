@@ -201,7 +201,7 @@ export default function Home() {
                 {weather.forecast && (
                   <div style={{ display: "flex", gap: 4, marginTop: 10, overflowX: "auto" }}>
                     {weather.forecast.map((slot, i) => (
-                      <div key={i} style={{ flex: "0 0 auto", minWidth: 62, textAlign: "center", padding: "6px 8px", background: S.bg, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
+                      <div key={i} style={{ flex: "0 0 auto", minWidth: 56, textAlign: "center", padding: "6px 6px", background: S.bg, borderRadius: 8, border: `0.5px solid ${S.border}` }}>
                         <div style={{ fontSize: 11, color: S.muted }}>{slot.time}</div>
                         <img src={slot.icon} alt="" style={{ width: 36, height: 36, margin: "0 auto", display: "block" }} />
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{slot.temp}°</div>
@@ -371,7 +371,7 @@ export default function Home() {
               {weather.forecast && (
                 <div style={{ display: "flex", gap: 3, marginTop: 10 }}>
                   {weather.forecast.map((slot, i) => (
-                    <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 10px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
+                    <div key={i} style={{ flex: 1, textAlign: "center", padding: "6px 7px", background: S.surf, borderRadius: 6, border: `0.5px solid ${S.border}` }}>
                       <div style={{ fontSize: 12, color: S.muted }}>{slot.time}</div>
                       <img src={slot.icon} alt="" style={{ width: 36, height: 36, margin: "0 auto", display: "block" }} />
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{slot.temp}°</div>
