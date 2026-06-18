@@ -331,8 +331,8 @@ export default function Chat() {
               disabled={loading || !!confirmState || images.length >= 5}
               style={{
                 flexShrink: 0, width: 52, height: 52, borderRadius: 12, border: `0.5px solid ${S.border2}`,
-                background: images.length > 0 ? "rgba(99,102,241,0.15)" : S.surf2,
-                color: images.length > 0 ? S.accent2 : S.muted,
+                background: images.length > 0 ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.1)",
+                color: S.accent2,
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
               <Camera size={18} />
