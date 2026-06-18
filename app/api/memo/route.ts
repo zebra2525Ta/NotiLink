@@ -225,13 +225,31 @@ export async function POST(req: NextRequest) {
     // Phase 2 (register): プロパティ生成
     const schema = schemas.find((s) => s.id === intent.database_id);
 
-    // 未分類DBへの登録は先に確認を取る
+    // 未分類DBへの登録は先に確認を取る（forceRegisterなら即登録へ進む）
     if (schema && schema.title.includes("未分類") && !body.forceRegister) {
       return NextResponse.json({
         askRegister: true,
         text: text as string,
         dbTitle: schema.title,
       });
+    }
+
+    // forceRegister時は生成→即登録して完了
+    if (body.forceRegister && schema) {
+      const examplesForce = await queryDatabase(session.accessToken, intent.database_id);
+      const groqForceItems = await generateProperties(processedText, schema, examplesForce, mode as Mode);
+      for (const groqProps of groqForceItems) {
+        const notionProperties: Record<string, unknown> = {};
+        const titlePropForce = schema.properties.find((p) => p.type === "title");
+        if (titlePropForce) {
+          const titleVal = groqProps[titlePropForce.name] ?? Object.values(groqProps).find((v) => typeof v === "string") ?? text;
+          notionProperties[titlePropForce.name] = { title: [{ text: { content: titleVal } }] };
+        }
+        const hasRichTextForce = schema.properties.some((p) => p.type === "rich_text");
+        const bodyContentForce = !hasRichTextForce ? stripInstructionSuffix(processedText) : undefined;
+        await createNotionPage(session.accessToken, intent.database_id, notionProperties, bodyContentForce);
+      }
+      return NextResponse.json({ message: `「${schema.title}」に登録しました！` });
     }
     if (!schema) {
       return NextResponse.json({ message: "対象データベースが見つかりません" }, { status: 400 });
