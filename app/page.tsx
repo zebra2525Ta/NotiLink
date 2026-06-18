@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Droplets, Wind, Gauge, Umbrella, Sunrise, Sunset } from "lucide-react";
 import NotiLinkLogo from "@/app/components/NotiLinkLogo";
+import NaviLogo from "@/app/components/NaviLogo";
 import type { ScheduleEvent } from "@/app/api/schedule/route";
 
 const SHORTCUTS = [
@@ -303,7 +304,7 @@ export default function Home() {
           onClick={() => router.push("/chat")}
           style={{ width: "100%", maxWidth: 520, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "13px", borderRadius: 12, background: "rgba(99,102,241,0.12)", border: `0.5px solid rgba(99,102,241,0.3)`, color: S.accent2, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
         >
-          <span>✦</span> Naviに話しかける
+          <NaviLogo size={18} bg={S.bg} /> Naviに話しかける
         </button>
       </div>
     </>
