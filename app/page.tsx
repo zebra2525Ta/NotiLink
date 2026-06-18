@@ -16,17 +16,7 @@ const SHORTCUTS = [
 ];
 
 function openApp(scheme: string, fallback: string) {
-  if (scheme.startsWith("http")) {
-    window.location.href = fallback;
-    return;
-  }
-  const iframe = document.createElement("iframe");
-  iframe.style.display = "none";
-  iframe.src = scheme;
-  document.body.appendChild(iframe);
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  window.location.href = scheme.startsWith("http") ? fallback : scheme;
 }
 
 function Sparkline({ positive }: { positive: boolean }) {
