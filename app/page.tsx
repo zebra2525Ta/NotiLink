@@ -165,7 +165,7 @@ export default function Home() {
         <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* ── 天気 ── */}
-          <section onClick={() => openApp("yjweather://", "https://weather.yahoo.co.jp/weather/")} style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}`, cursor: "pointer" }}>
+          <section onClick={() => window.open("https://weather.yahoo.co.jp/weather/", "_blank")} style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}`, cursor: "pointer" }}>
             <SectionLabel>天気 — 大阪</SectionLabel>
             {weather ? (
               <>
