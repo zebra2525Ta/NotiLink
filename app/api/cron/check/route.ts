@@ -105,6 +105,13 @@ export async function GET(req: Request) {
   };
   const theme = themeMap[jstHour] ?? "スケジュール・買い物・天気をバランスよく絡めた内容にすること";
 
+  // 直近の通知履歴を取得（重複防止）
+  const HISTORY_KEY = "push:history";
+  const history = await redis.lrange<string>(HISTORY_KEY, 0, 7);
+  const historyText = history.length > 0
+    ? `【直近の通知（これと同じ内容・表現は絶対に使わないこと）】\n${history.map((h, i) => `${i + 1}. ${h}`).join("\n")}`
+    : "";
+
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
@@ -117,6 +124,7 @@ export async function GET(req: Request) {
 【今日のスケジュール】${scheduleSummary}
 【買い物リスト（未購入）】${shoppingSummary}
 【天気】${weatherSummary}
+${historyText}
 
 【今回のテーマ】${theme}
 
@@ -128,9 +136,10 @@ export async function GET(req: Request) {
 - 絵文字は使わないこと
 - titleは20文字以内
 - bodyは50文字以内
+- messageはNaviからの一言（80文字以内・タメ口でおせっかいな励ましや心配の言葉）
 - JSONのみ返す・前置き不要
 
-{"title":"...","body":"...","url":"/"}`,
+{"title":"...","body":"...","message":"...","url":"/"}`,
       },
     ],
     temperature: 0.7,
@@ -140,6 +149,20 @@ export async function GET(req: Request) {
   const raw = completion.choices[0].message.content ?? "{}";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const notification = JSON.parse(raw) as any;
+
+  // 履歴に追加（最大8件）
+  const historyEntry = `${notification.title ?? ""}：${notification.body ?? ""}`;
+  await redis.lpush(HISTORY_KEY, historyEntry);
+  await redis.ltrim(HISTORY_KEY, 0, 7);
+
+  // 最新メッセージを保存（アプリ側で表示用）
+  if (notification.message) {
+    await redis.set("push:latest_message", {
+      message: notification.message,
+      time: jstTime,
+      date: jstDate,
+    });
+  }
 
   await sendPush({
     title: notification.title ?? "NotiLink",
