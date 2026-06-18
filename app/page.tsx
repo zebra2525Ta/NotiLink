@@ -59,7 +59,7 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-function ShortcutRow({ icon, label, desc, onClick }: { icon?: string; label: string; desc: string; onClick: () => void }) {
+function ShortcutRow({ icon, label, desc, onClick, customIcon }: { icon?: string; label: string; desc: string; onClick: () => void; customIcon?: React.ReactNode }) {
   const [hover, setHover] = useState(false);
   return (
     <button
@@ -71,7 +71,9 @@ function ShortcutRow({ icon, label, desc, onClick }: { icon?: string; label: str
       <div style={{ width: 34, height: 34, background: S.surf2, borderRadius: 8, border: `0.5px solid ${S.border2}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
         {icon
           ? <img src={icon} alt={label} style={{ width: 34, height: 34, objectFit: "cover" }} />
-          : <span style={{ fontSize: 14, color: S.accent2 }}>✦</span>}
+          : customIcon
+            ? customIcon
+            : <span style={{ fontSize: 14, color: S.accent2 }}>✦</span>}
       </div>
       <div>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{label}</div>
@@ -165,7 +167,19 @@ export default function Home() {
         <div style={{ padding: "16px 14px", display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* ── 天気 ── */}
-          <section onClick={() => window.open("https://weather.yahoo.co.jp/weather/", "_blank")} style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}`, cursor: "pointer" }}>
+          <section onClick={() => {
+            const handleVisible = () => {
+              document.body.style.display = "none";
+              requestAnimationFrame(() => { document.body.style.display = ""; });
+              document.removeEventListener("visibilitychange", handleVisible);
+            };
+            document.addEventListener("visibilitychange", handleVisible);
+            window.location.href = "yjweather://";
+            // アプリが未インストールの場合はWebにフォールバック
+            setTimeout(() => {
+              document.removeEventListener("visibilitychange", handleVisible);
+            }, 2000);
+          }} style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}`, cursor: "pointer" }}>
             <SectionLabel>天気 — 大阪</SectionLabel>
             {weather ? (
               <>
@@ -335,8 +349,14 @@ export default function Home() {
           ))}
           <div style={{ height: 0.5, background: S.border, margin: "12px 0" }} />
           <SectionLabel>クイックアクション</SectionLabel>
-          <ShortcutRow label="Navi" desc="メモ登録・検索" onClick={() => router.push("/chat")} />
-          <ShortcutRow label="ログアウト" desc="" onClick={() => signOut()} />
+          <ShortcutRow label="Navi" desc="メモ登録・検索" onClick={() => router.push("/chat")} customIcon={<NaviLogo size={22} bg={S.surf2} />} />
+          <ShortcutRow label="ログアウト" desc="" onClick={() => signOut()} customIcon={
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={S.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          } />
         </div>
 
         <div style={{ gridColumn: 2, gridRow: 1, background: S.bg, padding: 16 }}>
