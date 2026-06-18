@@ -139,6 +139,9 @@ export async function GET(req: Request) {
   const raw = completion.choices[0].message.content ?? "{}";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const notification = JSON.parse(raw) as any;
+  if (notification.message && !notification.message.endsWith("！")) {
+    notification.message = notification.message.replace(/[。、．\s]+$/, "") + "！";
+  }
 
   // 履歴に追加（最大8件）
   const historyEntry = `${notification.title ?? ""}：${notification.body ?? ""}`;

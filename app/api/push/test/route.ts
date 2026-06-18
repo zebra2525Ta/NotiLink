@@ -119,6 +119,9 @@ export async function POST() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const notification = JSON.parse(completion.choices[0].message.content ?? "{}") as any;
+  if (notification.message && !notification.message.endsWith("！")) {
+    notification.message = notification.message.replace(/[。、．\s]+$/, "") + "！";
+  }
 
   const historyEntry = `${notification.title ?? ""}：${notification.body ?? ""}`;
   await redis.lpush(HISTORY_KEY, historyEntry);
