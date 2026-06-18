@@ -287,8 +287,8 @@ export default function Chat() {
           <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", padding: "4px 4px", display: "flex", alignItems: "center" }}>
             <ChevronLeft size={22} />
           </button>
-          <NotiLinkLogo size={16} bg={S.surf} />
-          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.05em" }}>Navi</span>
+          <NotiLinkLogo size={22} bg={S.surf} />
+          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: "0.05em" }}>Navi</span>
           {!isOnline && (
             <span style={{ fontSize: 10, padding: "2px 7px", background: "rgba(245,158,11,0.12)", color: "#fbbf24", borderRadius: 20, border: "0.5px solid rgba(245,158,11,0.3)" }}>
               オフライン{pendingCount > 0 ? ` ${pendingCount}件待機` : ""}
