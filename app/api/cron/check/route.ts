@@ -122,6 +122,7 @@ export async function GET(req: Request) {
       },
     ],
     temperature: 0.8,
+    max_tokens: 1024,
     response_format: { type: "json_object" },
   });
 

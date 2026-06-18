@@ -101,6 +101,7 @@ export async function POST() {
       content: buildNotificationPrompt({ jstDate, jstTime, scheduleSummary, shoppingSummary, weatherSummary, theme, historyText }),
     }],
     temperature: 0.8,
+    max_tokens: 1024,
     response_format: { type: "json_object" },
   });
 
