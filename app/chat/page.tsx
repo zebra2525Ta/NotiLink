@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Camera } from "lucide-react";
 import NotiLinkLogo from "@/app/components/NotiLinkLogo";
+import NaviLogo from "@/app/components/NaviLogo";
 import type { Mode } from "@/lib/groq";
 import type { PendingPage } from "@/app/api/memo/route";
 import { enqueue, getPending, removeById } from "@/lib/offlineQueue";
@@ -270,7 +271,7 @@ export default function Chat() {
 
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <NotiLinkLogo size={72} bg={S.bg} />
+        <NaviLogo size={72} bg={S.bg} />
         <p style={{ fontSize: 13, color: S.muted }}>Naviに話しかけてください</p>
       </div>
     );
@@ -285,7 +286,7 @@ export default function Chat() {
           <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", padding: "4px 4px", display: "flex", alignItems: "center" }}>
             <ChevronLeft size={22} />
           </button>
-          <NotiLinkLogo size={22} bg={S.surf} />
+          <NaviLogo size={22} bg={S.surf} />
           <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: "0.05em" }}>Navi</span>
           {!isOnline && (
             <span style={{ fontSize: 10, padding: "2px 7px", background: "rgba(245,158,11,0.12)", color: "#fbbf24", borderRadius: 20, border: "0.5px solid rgba(245,158,11,0.3)" }}>
