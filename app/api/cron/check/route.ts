@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { redis, sendPush, TOKEN_KEY } from "@/lib/push";
 import { searchDatabases, queryDatabase } from "@/lib/notion";
 import Groq from "groq-sdk";
+import { buildNotificationPrompt } from "@/lib/groq";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -117,32 +118,10 @@ export async function GET(req: Request) {
     messages: [
       {
         role: "user",
-        content: `あなたはAI秘書Naviです。現在時刻${jstTime}（JST）に送るプッシュ通知を1件だけ作ってください。
-
-【今日の日付】${jstDate}
-【現在時刻】${jstTime}
-【今日のスケジュール】${scheduleSummary}
-【買い物リスト（未購入）】${shoppingSummary}
-【天気】${weatherSummary}
-${historyText}
-
-【今回のテーマ】${theme}
-
-ルール:
-- 上記テーマに従い、対応する情報（スケジュール／買い物リスト／天気）を必ずメインに使うこと
-- 対応する情報が「なし」の場合のみ、他の情報を代わりに使うこと
-- スケジュールが「なし」でも天気・買い物について積極的に触れること
-- タメ口・友達感覚でおせっかいなくらい気にかける口調にすること
-- 絵文字は使わないこと
-- titleは20文字以内
-- bodyは50文字以内
-- messageはNaviからの一言（80文字以内・タメ口でおせっかいな励ましや心配の言葉）
-- JSONのみ返す・前置き不要
-
-{"title":"...","body":"...","message":"...","url":"/"}`,
+        content: buildNotificationPrompt({ jstDate, jstTime, scheduleSummary, shoppingSummary, weatherSummary, theme, historyText }),
       },
     ],
-    temperature: 0.7,
+    temperature: 0.8,
     response_format: { type: "json_object" },
   });
 
