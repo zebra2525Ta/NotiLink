@@ -289,3 +289,20 @@ export async function generateQueryResponse(
 
   return completion.choices[0].message.content ?? "データを取得できませんでした。";
 }
+
+// ── 会話返信（Notionに登録しない場合の雑談・相談対応） ────────────────
+export async function generateChatReply(text: string): Promise<string> {
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      {
+        role: "system",
+        content: "あなたはNaviという名前の、ユーザーのことを本当に心配している幼なじみのような存在です。タメ口で、おせっかいなくらい心配したり励ましたりすること。絵文字は使わないこと。！を多めに使うこと。",
+      },
+      { role: "user", content: text },
+    ],
+    temperature: 0.8,
+    max_tokens: 512,
+  });
+  return completion.choices[0].message.content ?? "うまく返せなかった、ごめん！";
+}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { detectIntent, generateProperties, generateQueryResponse, type Mode } from "@/lib/groq";
+import { detectIntent, generateProperties, generateQueryResponse, generateChatReply, type Mode } from "@/lib/groq";
 import { searchDatabases, queryDatabase } from "@/lib/notion";
 import { auth } from "@/auth";
 
@@ -124,6 +124,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { mode } = body;
 
+    // ── 会話のみ（Notion登録しない） ──────────────────────────────
+    if (body.chatOnly && body.text) {
+      const reply = await generateChatReply(body.text as string);
+      return NextResponse.json({ message: reply });
+    }
+
     // ── 確認後の実際登録 ──────────────────────────────────────────
     if (body.confirm && Array.isArray(body.pendingPages)) {
       const pages = body.pendingPages as PendingPage[];
@@ -134,7 +140,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 通常処理 ─────────────────────────────────────────────────
-    const { text, images, imageBase64, mimeType } = body;
+    const { text, images, imageBase64, mimeType } = body as { text?: string; images?: { base64: string; mimeType: string }[]; imageBase64?: string; mimeType?: string; forceRegister?: boolean };
     if (!text?.trim()) {
       return NextResponse.json({ message: "テキストが空です" }, { status: 400 });
     }
@@ -218,6 +224,15 @@ export async function POST(req: NextRequest) {
 
     // Phase 2 (register): プロパティ生成
     const schema = schemas.find((s) => s.id === intent.database_id);
+
+    // 未分類DBへの登録は先に確認を取る
+    if (schema && schema.title.includes("未分類") && !body.forceRegister) {
+      return NextResponse.json({
+        askRegister: true,
+        text: text as string,
+        dbTitle: schema.title,
+      });
+    }
     if (!schema) {
       return NextResponse.json({ message: "対象データベースが見つかりません" }, { status: 400 });
     }

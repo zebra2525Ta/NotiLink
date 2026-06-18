@@ -28,6 +28,11 @@ interface ConfirmState {
   dbTitle: string;
 }
 
+interface AskRegisterState {
+  text: string;
+  dbTitle: string;
+}
+
 export default function Chat() {
   const [input, setInput] = useState("");
   const [reply, setReply] = useState<string | null>(null);
@@ -37,6 +42,7 @@ export default function Chat() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [askRegisterState, setAskRegisterState] = useState<AskRegisterState | null>(null);
   const [showInput, setShowInput] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +101,7 @@ export default function Chat() {
     setReply(null);
 
     setShowInput(false);
+    setAskRegisterState(null);
 
     if (!navigator.onLine) {
       await enqueue({ text: input, mode, timestamp: Date.now() });
@@ -119,7 +126,11 @@ export default function Chat() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (data.preview && data.pendingPages) {
+      if (data.askRegister) {
+        setAskRegisterState({ text: data.text, dbTitle: data.dbTitle });
+        setInput("");
+        clearImages();
+      } else if (data.preview && data.pendingPages) {
         setConfirmState({ pendingPages: data.pendingPages, dbTitle: data.dbTitle });
         setInput("");
         clearImages();
@@ -159,6 +170,49 @@ export default function Chat() {
     setConfirmState(null);
     setReply("キャンセルしました。");
     textareaRef.current?.focus();
+  }
+
+  async function handleAskRegisterYes() {
+    if (!askRegisterState) return;
+    setLoading(true);
+    setAskRegisterState(null);
+    try {
+      const res = await fetch("/api/memo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: askRegisterState.text, mode, forceRegister: true }),
+      });
+      const data = await res.json();
+      if (data.preview && data.pendingPages) {
+        setConfirmState({ pendingPages: data.pendingPages, dbTitle: data.dbTitle });
+      } else {
+        setReply(data.message);
+      }
+    } catch {
+      setReply("エラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAskRegisterNo() {
+    if (!askRegisterState) return;
+    setLoading(true);
+    const originalText = askRegisterState.text;
+    setAskRegisterState(null);
+    try {
+      const res = await fetch("/api/memo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatOnly: true, text: originalText, mode }),
+      });
+      const data = await res.json();
+      setReply(data.message);
+    } catch {
+      setReply("エラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -212,6 +266,30 @@ export default function Chat() {
           {images.length > 0 && (
             <p style={{ fontSize: 12, color: S.muted }}>画像を解析中...</p>
           )}
+        </div>
+      );
+    }
+
+    if (askRegisterState) {
+      return (
+        <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: S.surf2, borderRadius: 12, padding: "14px 16px", border: `0.5px solid ${S.border2}` }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ width: 1, alignSelf: "stretch", background: S.accent, borderRadius: 2, flexShrink: 0 }} />
+              <p style={{ fontSize: 14, color: S.text, margin: 0, lineHeight: 1.6 }}>{askRegisterState.text}</p>
+            </div>
+          </div>
+          <p style={{ fontSize: 13, color: S.muted, margin: 0 }}>「{askRegisterState.dbTitle}」に登録する？</p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={handleAskRegisterYes} style={{
+              flex: 1, padding: "12px", borderRadius: 12, border: "none",
+              background: S.accent, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
+            }}>登録する</button>
+            <button onClick={handleAskRegisterNo} style={{
+              flex: 1, padding: "12px", borderRadius: 12, border: `0.5px solid ${S.border2}`,
+              background: "transparent", color: S.muted, fontSize: 14, cursor: "pointer",
+            }}>Naviに話す</button>
+          </div>
         </div>
       );
     }
