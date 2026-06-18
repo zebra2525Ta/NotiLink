@@ -270,8 +270,8 @@ export default function Chat() {
 
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: `rgba(99,102,241,0.1)`, border: `0.5px solid rgba(99,102,241,0.25)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 20, color: S.accent2 }}>✦</span>
+        <div style={{ width: 64, height: 64, borderRadius: 18, background: `rgba(99,102,241,0.1)`, border: `0.5px solid rgba(99,102,241,0.25)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <NotiLinkLogo size={40} bg="transparent" />
         </div>
         <p style={{ fontSize: 13, color: S.muted }}>Naviに話しかけてください</p>
       </div>
