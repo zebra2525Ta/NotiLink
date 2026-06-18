@@ -270,9 +270,8 @@ export default function Chat() {
 
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 64, height: 64, borderRadius: 18, background: `rgba(99,102,241,0.1)`, border: `0.5px solid rgba(99,102,241,0.25)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <NotiLinkLogo size={40} bg="transparent" />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icon-192.png" alt="Navi" style={{ width: 64, height: 64, borderRadius: 18 }} />
         <p style={{ fontSize: 13, color: S.muted }}>Naviに話しかけてください</p>
       </div>
     );
