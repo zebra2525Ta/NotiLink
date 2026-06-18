@@ -64,7 +64,7 @@ export async function GET(req: Request) {
           .slice(0, 5)
           .map((p) => {
             const { __page_id: _id, ...rest } = p;
-            return Object.values(rest).find((v) => v && v !== "✗");
+            return Object.values(rest).filter((v) => v && v !== "✗" && v !== "✓").join(" ");
           })
           .filter(Boolean)
           .join("、");
