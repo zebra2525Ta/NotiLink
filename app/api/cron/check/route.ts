@@ -75,14 +75,24 @@ export async function GET(req: Request) {
     console.error("[cron/check] notion error:", e);
   }
 
-  // 天気取得
+  // 天気取得（OpenWeatherMapを直接呼ぶ）
   let weatherSummary = "不明";
   try {
-    const base = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
-    const w = await fetch(`${base}/api/weather`).then((r) => r.json());
-    weatherSummary = `${w.condition} ${w.temp}°C（最高${w.tempMax}° 最低${w.tempMin}°）`;
+    const owKey = process.env.OPENWEATHER_API_KEY;
+    const [curRes, fcRes] = await Promise.all([
+      fetch(`https://api.openweathermap.org/data/2.5/weather?q=Osaka&appid=${owKey}&units=metric&lang=ja`),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Osaka&appid=${owKey}&units=metric&lang=ja&cnt=4`),
+    ]);
+    const [cur, fc] = await Promise.all([curRes.json(), fcRes.json()]);
+    const condition = cur.weather?.[0]?.description ?? "不明";
+    const temp = Math.round(cur.main?.temp ?? 0);
+    const tempMax = Math.round(cur.main?.temp_max ?? 0);
+    const tempMin = Math.round(cur.main?.temp_min ?? 0);
+    const upcoming = (fc.list ?? []).slice(0, 3).map((item: { dt: number; weather: { description: string }[]; main: { temp: number } }) => {
+      const hour = new Date(item.dt * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" });
+      return `${hour} ${item.weather[0]?.description} ${Math.round(item.main.temp)}°C`;
+    }).join("、");
+    weatherSummary = `${condition} ${temp}°C（最高${tempMax}° 最低${tempMin}°）/ 予報: ${upcoming}`;
   } catch { /* ignore */ }
 
   // 時間帯でメインテーマを決める（スケジュール偏りを防ぐ）
