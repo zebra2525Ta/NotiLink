@@ -344,7 +344,7 @@ export default function Chat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={images.length > 0 ? "指示を入力（例：田中のシフトだけ登録して）" : "殴り書きOK（Enter で送信）"}
+              placeholder={images.length > 0 ? "指示を入力..." : "殴り書きOK（Enter で送信）"}
               rows={1}
               disabled={!!confirmState}
               style={{
