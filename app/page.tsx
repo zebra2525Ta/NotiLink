@@ -36,7 +36,6 @@ type Weather = {
   sunrise: string | null; sunset: string | null;
   icon: string; forecast?: ForecastSlot[];
 };
-type NewsItem = { title: string; link: string; source?: string };
 type Stock = {
   code: string; name: string; close: number;
   change: string; changePercent: string; positive: boolean; date: string;
@@ -109,7 +108,6 @@ function formatEventTime(start: string, end: string | null): string {
 
 export default function Home() {
   const [weather, setWeather] = useState<Weather | null>(null);
-  const [news, setNews] = useState<NewsItem[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
@@ -125,7 +123,6 @@ export default function Home() {
 
   useEffect(() => {
     fetch("/api/weather").then(r => r.json()).then(setWeather).catch(() => null);
-    fetch("/api/news").then(r => r.json()).then(setNews).catch(() => []);
     fetch("/api/stocks").then(r => r.json()).then(setStocks).catch(() => []);
     fetch("/api/schedule")
       .then(r => r.json())
@@ -275,25 +272,6 @@ export default function Home() {
             )) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
           </section>
 
-          {/* ── ニュース ── */}
-          <section style={{ background: S.surf, borderRadius: 14, padding: 16, border: `0.5px solid ${S.border}` }}>
-            <SectionLabel>ニュース</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {news.length > 0 ? news.slice(0, 6).map((n, i) => (
-                <a key={i} href={n.link} target="_blank" rel="noopener noreferrer"
-                  style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: S.bg, borderRadius: 10, border: `0.5px solid ${S.border}`, textDecoration: "none" }}>
-                  <span style={{ fontSize: 16, fontWeight: 500, color: S.border2, lineHeight: 1, flexShrink: 0, width: 18 }}>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div>
-                    <p style={{ fontSize: 13, color: S.text, lineHeight: 1.5, margin: 0 }}>{n.title}</p>
-                    {n.source && <p style={{ fontSize: 11, color: S.muted, margin: "4px 0 0" }}>{n.source}</p>}
-                  </div>
-                </a>
-              )) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
-            </div>
-          </section>
-
           {/* ── ショートカット ── */}
           <section style={{ background: S.surf, borderRadius: 14, padding: "12px 12px", border: `0.5px solid ${S.border}` }}>
             <SectionLabel>ショートカット</SectionLabel>
@@ -340,7 +318,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div style={{ flex: 1, overflow: "auto", display: "grid", gridTemplateColumns: "220px 1fr 1fr", gridTemplateRows: "auto auto auto", gap: 1, background: S.border }}>
+      <div style={{ flex: 1, overflow: "auto", display: "grid", gridTemplateColumns: "220px 1fr 1fr", gridTemplateRows: "auto auto", gap: 1, background: S.border }}>
 
         <div style={{ gridColumn: 1, gridRow: "1 / 3", background: S.surf, padding: 16, borderRight: `1px solid ${S.border}` }}>
           <SectionLabel>ショートカット</SectionLabel>
@@ -423,25 +401,7 @@ export default function Home() {
           )) : <p style={{ fontSize: 13, color: S.muted }}>読み込み中...</p>}
         </div>
 
-        <div style={{ gridColumn: "2 / 4", gridRow: 2, background: S.bg, padding: 16 }}>
-          <SectionLabel>ニュース</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {news.length > 0 ? news.slice(0, 6).map((n, i) => (
-              <a key={i} href={n.link} target="_blank" rel="noopener noreferrer"
-                style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: S.surf, borderRadius: 8, border: `0.5px solid ${S.border}`, textDecoration: "none" }}>
-                <span style={{ fontSize: 20, fontWeight: 500, color: S.border2, lineHeight: 1, flexShrink: 0, width: 20 }}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p style={{ fontSize: 13, color: S.text, lineHeight: 1.5 }}>{n.title}</p>
-                  {n.source && <p style={{ fontSize: 11, color: S.muted, marginTop: 4 }}>{n.source}</p>}
-                </div>
-              </a>
-            )) : <p style={{ fontSize: 13, color: S.muted, gridColumn: "1/3" }}>読み込み中...</p>}
-          </div>
-        </div>
-
-        <div style={{ gridColumn: "1 / 4", gridRow: 3, background: S.surf, padding: "14px 20px", borderTop: `1px solid ${S.border2}` }}>
+        <div style={{ gridColumn: "1 / 4", gridRow: 2, background: S.surf, padding: "14px 20px", borderTop: `1px solid ${S.border2}` }}>
           <SectionLabel>スケジュール（直近7日）</SectionLabel>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
             {days.map((day, i) => {
